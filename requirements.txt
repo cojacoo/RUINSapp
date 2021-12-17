@@ -1,0 +1,10 @@
+numpy==1.18.1
+streamlit==0.56.0
+pandas==0.25.3
+seaborn>=0.9.0
+plotly==4.5.0
+statsmodels>=0.11.1
+xarray>=0.14.0
+climate-indices>=1.0.8
+pillow
+sklearn

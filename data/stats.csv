@@ -1,0 +1,14 @@
+,Station name,elevation,lat,lon,krummhoern,coast,niedersachsen,inland
+Norderney,Norderney,12.0,53.7123,7.1519,True,True,True,False
+Emden,Emden-Nesserland,5.0,53.3449,7.1909,True,True,True,False
+Bremerhaven,Bremerhaven,7.0,53.5332,8.5761,False,True,True,False
+Cuxhaven,Cuxhaven,5.0,53.8713,8.7058,False,True,True,False
+Elpers,Elpersbüttel,3.0,54.0691,9.0105,False,True,False,False
+Ording,Sankt Peter-Ording,5.0,54.3279,8.6031,False,True,False,False
+Soltau,Soltau,75.0,52.9604,9.793,False,False,True,True
+Diepholz,Diepholz,38.0,52.5881,8.3424,False,False,True,True
+Lüchow,Lüchow,16.0,52.9724,11.1374,False,False,True,True
+Braunschweig,Braunschweig-Gliesmarode,83.0,52.2744,10.5656,False,False,True,True
+Alfeld,Alfeld,144.0,51.9643,9.8072,False,False,True,True
+Lingen,Lingen,22.0,52.5181,7.3081,False,False,True,False
+Bremervörde,Bremervörde (A),5.0,53.4779,9.1553,False,False,True,False

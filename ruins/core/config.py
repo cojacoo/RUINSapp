@@ -31,7 +31,7 @@ class Config(Mapping):
         self.datapath = pjoin(self.basepath, 'data')
 
         # store the keys
-        self._keys = ['DEBUG', 'basepath', 'datapath']
+        self._keys = ['debug', 'basepath', 'datapath']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}

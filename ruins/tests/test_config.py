@@ -16,8 +16,8 @@ def test_default_config():
     # initialize config without arguments
     conf = core.Config()
 
-    assert conf.datapath == datapath
-    assert conf.basepath == basepath
+    assert conf.datapath.lower() == datapath.lower()
+    assert conf.basepath.lower() == basepath.lower()
     assert conf.debug is False
 
 
@@ -28,8 +28,8 @@ def test_config_overwrites():
 
     conf = core.Config(datapath=temppath)
 
-    assert conf.basepath == basepath
-    assert conf.datapath == temppath
+    assert conf.basepath.lower() == basepath.lower()
+    assert conf.datapath.lower() == temppath.lower()
 
 
 def test_from_json():

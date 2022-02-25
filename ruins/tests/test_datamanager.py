@@ -33,6 +33,7 @@ def test_weather_dataset():
 
     # load the data
     if NO_LFS:
+        print('No LFS, skipping partial test')
         return
 
     data = weather.read()

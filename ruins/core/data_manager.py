@@ -66,17 +66,16 @@ class HDF5Source(DataSource):
         self.path = path
         self.cache = cache
 
-        # check cache settings
-        if self.cache:
-            self.data = self._load_source()
-
     def _load_source(self):
         """Method to load the actual source on the disk"""
         return xr.load_dataset(self.path)
 
     def read(self):
         if self.cache:
+            if not hasattr(self, 'data'):
+                self.data = self._load_source()
             return self.data
+
         else:
             return self._load_source()
     

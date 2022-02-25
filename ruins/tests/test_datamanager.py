@@ -1,7 +1,12 @@
 import xarray as xr
+import os
 
 from ruins.core import DataManager
 from ruins.core.data_manager import HDF5Source
+
+# some datasources are backed by git-lfs which have to be disabled on 
+# github actions
+NO_LFS = 'NO_LFS' in os.environ
 
 
 def test_default_manager():
@@ -27,5 +32,8 @@ def test_weather_dataset():
     assert isinstance(weather, HDF5Source)
 
     # load the data
+    if NO_LFS:
+        return
+
     data = weather.read()
     assert isinstance(data, xr.Dataset)

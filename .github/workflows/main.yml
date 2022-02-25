@@ -20,9 +20,10 @@ jobs:
     - name: Checkout and use lfs
       uses: actions/checkout@v2
       with:
-        lfs: true
-    - name: Download LFS
-      run: git lfs checkout
+        # lfs: true
+        lfs: false
+    # - name: Download LFS
+    #  run: git lfs checkout
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:

@@ -44,11 +44,6 @@ from collections.abc import Mapping
 from typing import Type, List
 
 
-DEFAULT_MIMES = {
-    'nc': 'HDF5Source',
-    'csv': 'CSVSource',
-}
-
 
 class DataSource(abc.ABC):
     """
@@ -209,8 +204,11 @@ class DataManager(Mapping):
         different extensions.
 
         """
-        # load the tracked
-        mimes = self._config.get('include_mimes', DEFAULT_MIMES)
+        # load the tracked source base class
+        mimes = self._config.get('default_sources', {})
+
+        # check if the config holds arguments for this source instance
+        args = self._config.get('sources_args', {}).get(os.path.basename(path), {})
 
         # get the basename
         try:
@@ -226,7 +224,7 @@ class DataManager(Mapping):
             BaseClass = self.resolve_class_name(clsName)
             
             # add the source
-            args = self._config.get(basename, {})
+#            args = self._config.get(basename, {})
             args.update({'path': path, 'cache': self.cache})
             self._data_sources[basename] = BaseClass(**args)
         else:

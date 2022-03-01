@@ -46,7 +46,7 @@ class Config(Mapping):
         self.sources_args.update(kwargs.get('include_args', {}))
 
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'source_args']
+        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}

@@ -1,14 +1,35 @@
 import streamlit as st
+import numpy as np
 
-import xarray as xr
+import xarray as xr # TODO  this should be covered by the DataManager
+import pandas as pd # TODO this should be covered by the DataManager
+
+from ruins.plotting import monthlyx
+from ruins import components
+
+# TODO: Build this into DataManager
+def load_data(sel='Weather',regagg=None):
+    #Read data from netcdf files and return xarray
+    if sel == 'Weather':
+        data = xr.load_dataset('data/weather.nc')
+    elif sel == 'CORDEX':
+        data = xr.load_dataset('data/cordex_coast.nc')
+    else:
+        if regagg == 'North Sea Coast':
+            data = xr.load_dataset('data/cordex_coast.nc')
+            data.filter_by_attrs(RCP=sel)
+
+    return data
 
 
-def climate_explorer():
+# TODO refactor the plots into the plotting module
+def climate_explorer(w_topic: str):
     cliprojs = ["Global", "Regional"]
     cliproj = st.sidebar.radio("Climate Model Scaling:", options=cliprojs)
 
-    expl_md = read_markdown_file('explainer/climatescale.md')
-    st.sidebar.markdown(expl_md, unsafe_allow_html=True)
+    # TODO: Re-implement this as a service
+    # expl_md = read_markdown_file('explainer/climatescale.md')
+    # st.sidebar.markdown(expl_md, unsafe_allow_html=True)
 
     if cliproj=='Regional':
         regaggs = ['North Sea Coast', 'Krummhörn',  'Niedersachsen', 'Inland']
@@ -92,7 +113,17 @@ def climate_explorer():
 def main_app():
     st.header('Climate Projections Explorer')
     st.markdown('''In this section we add climate model projections to the table. The same variables and climate indices are used to explore the projections of different climate models and downscaling models. It is also possible to compare projections under different scenarios about the CO<sub>2</sub>-concentration pathways to observed weather and between different model projections.''',unsafe_allow_html=True)
-    climate_explorer()
+    
+    
+    # TODO: refactor this
+    topics = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+    
+    # topic selector
+    topic = components.topic_selector(topic_list=topics, container=st.sidebar)
+    
+    # TODO refactor this
+    climate_explorer(topic)
+
 
 if __name__ == '__main__':
     main_app()

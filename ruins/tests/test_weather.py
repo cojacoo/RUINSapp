@@ -1,4 +1,7 @@
 from ruins.apps import weather
+from ruins.tests.util import get_test_config
+
+from ruins.core import DataManager
 
 
 # TODO use the config and inject the dedub config here
@@ -11,5 +14,11 @@ from ruins.apps import weather
 
 def test_climate_indices():
     """Test only climate indices """
-    w, c = weather.load_alldata()
+    conf = get_test_config()
+    dm = DataManager(**conf)
+
+    w = dm['weather'].read()
+    c = dm['cordex_coast'].read()
+
+    # run
     weather.climate_indices(w, c)

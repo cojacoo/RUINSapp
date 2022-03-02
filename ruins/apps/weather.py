@@ -1,9 +1,11 @@
 import streamlit as st
-import xarray as xr
-import pandas as pd
+import xarray as xr     # TODO: these references should be moved to DataManager
+import pandas as pd     # TODO: these references should be moved to DataManager
 import numpy as np
+import matplotlib.pyplot as plt
 
 from ruins.plotting import plt_map, kde, yrplot_hm
+from ruins import components
 
 
 
@@ -71,7 +73,9 @@ def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
         print('Nothing calculated.')
         return
 
-def climate_indices(stati='coast',cliproj=True):
+# TODO: document + signature
+# TODO: extract plotting
+def climate_indices(weather: xr.Dataset, climate: xr.Dataset, stati='coast', cliproj=True):
     cindi = ['Ice days (Tmax < 0°C)', 'Frost days (Tmin < 0°C)', 'Summer days (Tmax ≥ 25°C)', 'Hot days (Tmax ≥ 30°C)','Tropic nights (Tmin ≥ 20°C)', 'Rainy days (Precip ≥ 1mm)']
     ci_topic = st.selectbox('Select Index:', cindi)
 
@@ -140,7 +144,7 @@ def climate_indices(stati='coast',cliproj=True):
     return
 
 
-def weather_explorer():
+def weather_explorer(w_topic: str):
     weather, climate = load_alldata()
     #weather = load_data('Weather')
 
@@ -231,8 +235,9 @@ def weather_explorer():
                 ax2.set_xlim(datarng[0],datarng[1])
                 st.pyplot()
 
-            expl_md = read_markdown_file('explainer/stripes.md')
-            st.markdown(expl_md, unsafe_allow_html=True)
+            # Re-implement this as a application wide service
+            # expl_md = read_markdown_file('explainer/stripes.md')
+            # st.markdown(expl_md, unsafe_allow_html=True)
 
         elif w_aspect == 'Monthly':
             wdata = weather[stat1].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat1]
@@ -285,8 +290,9 @@ def weather_explorer():
                     plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
                     st.pyplot()
 
-            expl_md = read_markdown_file('explainer/stripes_m.md')
-            st.markdown(expl_md, unsafe_allow_html=True)
+            # Re-implement this as a application wide service
+            # expl_md = read_markdown_file('explainer/stripes_m.md')
+            # st.markdown(expl_md, unsafe_allow_html=True)
 
     elif w_topic == 'Weather Indices':
         climate_indices(stat1,cliproj)
@@ -301,8 +307,14 @@ def main_app():
     st.header('Weather Data Explorer')
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
+    # TODO: refactor this
+    topics = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+    
+    # topic selector
+    topic = components.topic_selector(topic_list=topics, container=st.sidebar)
+    
     # TODO refactor this
-    weather_explorer()
+    weather_explorer(topic)
 
 
 if __name__ == '__main__':

@@ -12,3 +12,13 @@ For more information about the RUINS project, see our website.
 
 All data is public domain from the respectively quoted sources. The tools are developed in Python under MIT license without any liability.
 Please join, fork, reuse...
+
+## Development State
+
+* [Pre-Release Checklist](https://github.com/hydrocode-de/RUINSapp/issues/20)
+
+### Applications
+
+* [Weather Explorer Overview](https://github.com/hydrocode-de/RUINSapp/issues/21)
+* [Climate Explorer Overview](https://github.com/hydrocode-de/RUINSapp/issues/29)
+* [Management Explorer Overview](https://github.com/hydrocode-de/RUINSapp/issues/32)

@@ -3,7 +3,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 
-from ruins.plotting import plt_map
+from ruins.plotting import plt_map, kde, yrplot_hm
 
 
 
@@ -24,8 +24,124 @@ def load_alldata():
     return weather, climate
 
 
+def applySDM(wdata, data, meth='rel', cdf_threshold=0.9999999, lower_limit=0.1):
+    '''apply structured distribution mapping to climate data and return unbiased version of dataset'''
+    from sdm import SDM
+    data_ub = data.copy()
+
+    for k in data_ub.columns:
+        data_col = data_ub[k].dropna()
+        overlapx = pd.concat(
+            [wdata.loc[data_col.index[0]:wdata.index[-1]], data_col.loc[data_col.index[0]:wdata.index[-1]]], axis=1)
+        overlapx.columns = ['obs', 'cm']
+        overlapx = overlapx.dropna()
+        try:
+            data_ub[k] = SDM(overlapx.obs, overlapx.cm, data_col, meth, cdf_threshold, lower_limit)
+        except:
+            data_ub[k] = data_ub[k] * np.nan
+
+    data_ub[data_ub == 0.0000000] = np.nan
+    data_ub = data_ub.loc[data_ub.index[0]:pd.to_datetime('2099-12-31 23:59:59')]
+
+    return data_ub
+
+
+def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
+    '''
+    Calculate climate indicator days.
+    Input time series of meteorological data
+    '''
+    if pd.infer_freq(ts.index) != 'D':
+        print('Please provide daily data.')
+        return
+
+    if indi == 'Summer days (Tmax ≥ 25°C)':  # summer days
+        return (ts.Tmax >= 25.).groupby(ts.index.year).sum()
+    elif indi == 'Ice days (Tmax < 0°C)':  # ice days
+        return (ts.Tmax < 0.).groupby(ts.index.year).sum()
+    elif indi == 'Frost days (Tmin < 0°C)':  # frost days
+        return (ts.Tmin < 0.).groupby(ts.index.year).sum()
+    elif indi == 'Hot days (Tmax ≥ 30°C)':  # hot days
+        return (ts.Tmax >= 30.).groupby(ts.index.year).sum()
+    elif indi == 'Tropic nights (Tmin ≥ 20°C)':  # tropic night
+        return (ts.Tmin >= 20.).groupby(ts.index.year).sum()
+    elif indi == 'Rainy days (Precip ≥ 1mm)':  # rainy days
+        return (ts.Prec >= 1.).groupby(ts.index.year).sum()
+    else:
+        print('Nothing calculated.')
+        return
+
+def climate_indices(stati='coast',cliproj=True):
+    cindi = ['Ice days (Tmax < 0°C)', 'Frost days (Tmin < 0°C)', 'Summer days (Tmax ≥ 25°C)', 'Hot days (Tmax ≥ 30°C)','Tropic nights (Tmin ≥ 20°C)', 'Rainy days (Precip ≥ 1mm)']
+    ci_topic = st.selectbox('Select Index:', cindi)
+
+    if ci_topic == 'Rainy days (Precip ≥ 1mm)':
+        vari = 'Prec'
+        meth = 'rel'
+    elif (ci_topic == 'Frost days (Tmin < 0°C)') | (ci_topic == 'Tropic nights (Tmin ≥ 20°C)'):
+        vari = 'Tmin'
+        meth = 'abs'
+    else:
+        vari = 'Tmax'
+        meth = 'abs'
+
+    w1 = weather[stati].sel(vars=vari).to_dataframe().dropna()
+    w1.columns = ['bla', vari]
+
+    plt.figure(figsize=(10,2.5))
+    wi = climate_indi(w1, ci_topic).astype(int)
+    wi.plot(style='.', color='steelblue', label='Coast weather')
+    wi.rolling(10, center=True).mean().plot(color='steelblue', label='Rolling mean\n(10 years)')
+
+    if cliproj:
+        c1 = climate.sel(vars=vari).to_dataframe()
+        c1 = c1[c1.columns[c1.columns != 'vars']]
+        c2 = applySDM(w1[vari], c1, meth=meth)
+
+        firstitem = True
+        for j in c2.columns:
+            dummyt = pd.DataFrame(c2[j])
+            dummyt.columns = [vari]
+            ci = pd.DataFrame(climate_indi(dummyt, ci_topic).astype(int))
+            ci.columns = [j]
+
+            if firstitem:
+                ci[j].plot(style='.', color='gray', alpha=0.1, label='all climate projections')
+                cid = ci
+                firstitem = False
+            else:
+                ci[j].plot(style='.', color='gray', alpha=0.1, label='_')
+                cid = pd.concat([cid, ci], axis=1)
+
+        rcpx = np.array([x[-5:] for x in cid.columns.values])
+        for n in np.unique(rcpx):
+            nx = n
+            if n == np.unique(rcpx)[-1]:
+                nx = n + '\n(Rolling of 5 years)'
+            cid[cid.columns[rcpx == n]].mean(axis=1).rolling(5, center=True).mean().plot(label='Mean of ' + nx)
+
+    plt.legend(ncol=2)
+    plt.ylabel('Number of days')
+    plt.title(ci_topic)
+    st.pyplot()
+
+    if ci_topic == 'Ice days (Tmax < 0°C)':
+        st.markdown('''Number of days in one year which persistently remain below 0°C air temperature.''')
+    elif ci_topic == 'Frost days (Tmin < 0°C)':
+        st.markdown('''Number of days in one year which reached below 0°C air temperature.''')
+    elif ci_topic == 'Summer days (Tmax ≥ 25°C)':
+        st.markdown('''Number of days in one year which reached or exceeded 25°C air temperature.''')
+    elif ci_topic == 'Hot days (Tmax ≥ 30°C)':
+        st.markdown('''Number of days in one year which reached or exceeded 30°C air temperature.''')
+    elif ci_topic == 'Tropic nights (Tmin ≥ 20°C)':
+        st.markdown('''Number of days in one year which persistently remained above 20°C air temperature.''')
+    elif ci_topic == 'Rainy days (Precip ≥ 1mm)':
+        st.markdown('''Number of days in one year which received at least 1 mm precipitation.''')
+    return
+
+
 def weather_explorer():
-    weather, _ = load_alldata()
+    weather, climate = load_alldata()
     #weather = load_data('Weather')
 
     #aspects = ['Annual', 'Monthly', 'Season']
@@ -182,6 +298,9 @@ def weather_explorer():
 
 
 def main_app():
+    st.header('Weather Data Explorer')
+    st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
+
     # TODO refactor this
     weather_explorer()
 

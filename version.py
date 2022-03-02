@@ -10,8 +10,11 @@ def increment(which='patch'):
         parts[2] = str(int(parts[2]) + 1)
     elif which == 'minor':
         parts[1] = str(int(parts[1]) + 1)
+        parts[2] = '0'
     elif which == 'major':
         parts[0] = str(int(parts[0]) + 1)
+        parts[1] = '0'
+        parts[2] = '0'
     else:
         raise ValueError("Invalid version increment.")
     return '.'.join(parts)

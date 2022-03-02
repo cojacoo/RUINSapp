@@ -27,15 +27,22 @@ def topic_selector(topic_list: List[str], force_topic_select: bool = True, conta
         :class:`Config <ruins.config.Config>` objects.
     """
     # check if a topic is already present
-    current_topic = st.session_state.get('topic', None)
+    if kwargs.get('no_cache', False):
+        current_topic = kwargs.get('current_topic', None)
+    else:  # pragma: no cover
+        current_topic = st.session_state.get('topic', kwargs.get('current_topic', None))
     if current_topic is not None and not force_topic_select:
         return current_topic
     
     # otherwise print select
-    topic = container.selectbox('Select a topic', topic_list)
+    topic = st.selectbox(
+        'Select a topic',
+        topic_list, 
+        index=0 if current_topic is None else topic_list.index(current_topic)
+    )
 
     # store topic in session cache
-    if current_topic != topic:
+    if current_topic != topic and not kwargs.get('no_cache', False): # pragma: no cover
         st.session_state['topic'] = topic
     
     return topic

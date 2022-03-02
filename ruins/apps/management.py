@@ -1,9 +1,12 @@
 import streamlit as st
-import xarray as xr
 import numpy as np
-import pandas as pd
 
-from ruins.apps import climate
+import pandas as pd # TODO  this should be covered by the DataManager
+import xarray as xr # TODO  this should be covered by the DataManager
+import matplotlib.pyplot as plt # TODO this should be moved into plotting submodule
+
+
+from ruins import components
 
 
 def load_alldata():
@@ -189,7 +192,7 @@ def water_proj():
 
 
 
-def management_explorer():
+def management_explorer(w_topic: str):
     rcps = ['rcp45', 'rcp85']  # 'rcp26',
     rcp = st.sidebar.selectbox('RCP:', rcps)
 
@@ -251,7 +254,15 @@ def management_explorer():
 def main_app():
     st.header('Management Explorer')
     st.markdown('''In this section we project the climate model outputs to ecosystem services through diffferent model approaches. The impact of potential management is tackeled at a rather broad level in terms of exemplary options.''', unsafe_allow_html=True)
-    management_explorer()
+    
+    # TODO: refactor this
+    topics = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+    
+    # topic selector
+    topic = components.topic_selector(topic_list=topics, container=st.sidebar)
+    
+    # TODO refactor this    
+    management_explorer(topic)
 
 
 if __name__ == '__main__':

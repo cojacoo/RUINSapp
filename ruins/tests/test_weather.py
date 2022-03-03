@@ -32,8 +32,8 @@ def test_climate_indi():
     weath = dm['weather'].read()
 
     # make an arbitrary selection
-    w = weath['coast'].sel(vars='Tmin').to_dataframe().dropna()
-    w.columns = ['_', 'Tmin']
+    w = weath['coast'].sel(vars='Tmax').to_dataframe().dropna()
+    w.columns = ['_', 'Tmax']
 
     # run
     weather.climate_indi(w, 'Ice days (Tmax < 0°C)')

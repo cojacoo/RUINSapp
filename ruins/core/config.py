@@ -30,8 +30,23 @@ class Config(Mapping):
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
         self.datapath = pjoin(self.basepath, 'data')
 
+        # mime readers
+        self.default_sources = {
+            'nc': 'HDF5Source',
+            'csv': 'CSVSource',
+        }
+        self.default_sources.update(kwargs.get('include_mimes', {}))
+
+        # reader args
+        self.sources_args = {
+            'stats.csv': dict(index_col=0),
+            'hsim_collect.csv': dict(index_col=0),
+            'windpowerx.csv': dict(index_col=0),
+        }
+        self.sources_args.update(kwargs.get('include_args', {}))
+
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath']
+        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}

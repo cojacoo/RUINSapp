@@ -37,17 +37,19 @@ in debug mode:
 import abc
 import os
 import glob
+import inspect
 import xarray as xr
+import pandas as pd
 from collections.abc import Mapping
 from typing import Type, List
 
 
-DEFAULT_MIMES = {
-    'nc': 'HDF5Source'
-}
-
 
 class DataSource(abc.ABC):
+    """
+    Abstract base class for data sources. This provides the common interface
+    for data sources of different source types (like file, URL, database).
+    """
     def __init__(self, **kwargs):
         self._kwargs = kwargs
 
@@ -60,15 +62,20 @@ class DataSource(abc.ABC):
         pass
 
 
-class HDF5Source(DataSource):
+class FileSource(DataSource, abc.ABC):
+    """
+    Abstract base class for file sources. This provides the common interface
+    for every data source that is based on a file.
+    """
     def __init__(self, path: str, cache: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.path = path
         self.cache = cache
 
+    @abc.abstractmethod
     def _load_source(self):
         """Method to load the actual source on the disk"""
-        return xr.load_dataset(self.path)
+        pass
 
     def read(self):
         if self.cache:
@@ -81,6 +88,33 @@ class HDF5Source(DataSource):
     
     def filter(self):
         pass
+
+
+class HDF5Source(FileSource):
+    """
+    HDF5 file sources. This class is used to load HDF5 files.
+    """
+    def _load_source(self):
+        return xr.open_dataset(self.path)
+
+
+class CSVSource(FileSource):
+    """
+    CSV file source. This class is used to load CSV files.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # inspect read_csv to learn about allowed param
+        sig = inspect.signature(pd.read_csv)
+        self.pandas_params = list(sig.parameters.keys())
+
+    def _load_source(self):
+        # extract pandas args
+        pandas_args = {k: v for k, v in self._kwargs.items() if k in self.pandas_params}
+
+        # load data
+        return pd.read_csv(self.path, **pandas_args)
 
 
 class DataManager(Mapping):
@@ -170,8 +204,11 @@ class DataManager(Mapping):
         different extensions.
 
         """
-        # load the tracked
-        mimes = self._config.get('include_mimes', DEFAULT_MIMES)
+        # load the tracked source base class
+        mimes = self._config.get('default_sources', {})
+
+        # check if the config holds arguments for this source instance
+        args = self._config.get('sources_args', {}).get(os.path.basename(path), {})
 
         # get the basename
         try:
@@ -187,7 +224,7 @@ class DataManager(Mapping):
             BaseClass = self.resolve_class_name(clsName)
             
             # add the source
-            args = self._config.get(basename, {})
+#            args = self._config.get(basename, {})
             args.update({'path': path, 'cache': self.cache})
             self._data_sources[basename] = BaseClass(**args)
         else:

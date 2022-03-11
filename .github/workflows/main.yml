@@ -59,10 +59,10 @@ jobs:
           # lfs: true
           lfs: false
       
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.9
       
       - name: Install dependencies
         run: |

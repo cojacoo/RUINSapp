@@ -292,7 +292,8 @@ def main_app(**kwargs):
     The main weather explorer app accepts all 
     """
     # build the config and dataManager from kwargs
-    config, dataManager = build_config(**kwargs)
+    url_params = st.experimental_get_query_params()
+    config, dataManager = build_config(url_params=url_params, **kwargs)
 
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
 

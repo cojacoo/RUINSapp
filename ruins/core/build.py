@@ -2,7 +2,7 @@
 Build a :class:`Config <ruins.core.Config>` and a 
 :class:`DataManager <ruins.core.DataManager>` from a kwargs dict.
 """
-from types import Union, Tuple
+from typing import Union, Tuple
 
 from .config import Config
 from .data_manager import DataManager

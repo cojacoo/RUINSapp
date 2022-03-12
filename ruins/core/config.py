@@ -45,8 +45,14 @@ class Config(Mapping):
         }
         self.sources_args.update(kwargs.get('include_args', {}))
 
+        # app management
+        self.layout = 'centered'
+
+        # app content
+        self.topic_list = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args']
+        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args', 'layout', 'topic_list']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}

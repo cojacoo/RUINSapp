@@ -4,7 +4,7 @@ import plotly.express as px
 import numpy as np
 
 
-def plt_map(sel='all',cm='none'):
+def plt_map(sel='all', cm='none'):
     # TODO remove this part
     import xarray as xr
     import pandas as pd

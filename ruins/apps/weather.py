@@ -6,26 +6,12 @@ import matplotlib.pyplot as plt
 
 from ruins.plotting import plt_map, kde, yrplot_hm
 from ruins import components
+from ruins.core import build_config, DataManager, Config
 
 
 
 ####
 # OLD STUFF
-# 
-# TODO: replace with DataManager
-def load_alldata():
-    weather = xr.load_dataset('data/weather.nc')
-    climate = xr.load_dataset('data/cordex_coast.nc')
-
-    # WARNING - bug fix for now:
-    # 'HadGEM2-ES' model runs are problematic and will be removed for now
-    # The issue is with the timestamp and requires revision of the ESGF reading routines
-    kys = [s for s in list(climate.keys()) if 'HadGEM2-ES' not in s] #remove all entries of HadGEM2-ES (6 entries)
-    climate = climate[kys]
-
-    return weather, climate
-
-
 def applySDM(wdata, data, meth='rel', cdf_threshold=0.9999999, lower_limit=0.1):
     '''apply structured distribution mapping to climate data and return unbiased version of dataset'''
     from sdm import SDM
@@ -144,14 +130,11 @@ def climate_indices(weather: xr.Dataset, climate: xr.Dataset, stati='coast', cli
     return
 
 
-def weather_explorer(w_topic: str):
-    weather, climate = load_alldata()
-    #weather = load_data('Weather')
-
-    #aspects = ['Annual', 'Monthly', 'Season']
-    #w_aspect = st.sidebar.selectbox('Temporal aggegate:', aspects)
-
-    #cliproj = st.sidebar.checkbox('add climate projections',False)
+def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
+    """
+    """
+    # load data
+    weather = dataManager['weather'].read()
 
     statios = list(weather.keys())
     stat1 = st.selectbox('Select station/group (see map in sidebar for location):', statios)
@@ -303,19 +286,27 @@ def weather_explorer(w_topic: str):
             unsafe_allow_html=True)
 
 
-def main_app():
+def main_app(**kwargs):
+    """Describe the params in kwargs here
+
+    The main weather explorer app accepts all 
+    """
+    # build the config and dataManager from kwargs
+    config, dataManager = build_config(**kwargs)
+
+    st.set_page_config(page_title='Weather Explorer', layout=config.layout)
+
+    # build the app
     st.header('Weather Data Explorer')
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
-    # TODO: refactor this
-    topics = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
-    
     # topic selector
-    topic = components.topic_selector(topic_list=topics, container=st.sidebar)
+    topic = components.topic_selector(topic_list=config.topic_list, container=st.sidebar)
     
     # TODO refactor this
-    weather_explorer(topic)
+    weather_explorer(topic, config, dataManager)
 
 
 if __name__ == '__main__':
-    main_app()
+    import fire
+    fire.Fire(main_app)

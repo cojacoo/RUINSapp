@@ -1,3 +1,4 @@
+from typing import List
 import streamlit as st
 import xarray as xr     # TODO: these references should be moved to DataManager
 import pandas as pd     # TODO: these references should be moved to DataManager
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 from ruins.plotting import plt_map, kde, yrplot_hm
 from ruins import components
 from ruins.core import build_config, DataManager, Config
+from ruins.core.cache import partial_memoize
 
 
 
@@ -61,7 +63,15 @@ def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
 
 # TODO: document + signature
 # TODO: extract plotting
-def climate_indices(weather: xr.Dataset, climate: xr.Dataset, stati='coast', cliproj=True):
+def climate_indices(dataManager: DataManager, config: Config):
+    # get data
+    weather = dataManager['weather'].read()
+    climate = dataManager['codex_coast'].read()
+
+    # get the relevant settings
+    stati = config.get('selected_station', 'coast')
+
+
     cindi = ['Ice days (Tmax < 0°C)', 'Frost days (Tmin < 0°C)', 'Summer days (Tmax ≥ 25°C)', 'Hot days (Tmax ≥ 30°C)','Tropic nights (Tmin ≥ 20°C)', 'Rainy days (Precip ≥ 1mm)']
     ci_topic = st.selectbox('Select Index:', cindi)
 
@@ -83,7 +93,7 @@ def climate_indices(weather: xr.Dataset, climate: xr.Dataset, stati='coast', cli
     wi.plot(style='.', color='steelblue', label='Coast weather')
     wi.rolling(10, center=True).mean().plot(color='steelblue', label='Rolling mean\n(10 years)')
 
-    if cliproj:
+    if config['include_climate']:
         c1 = climate.sel(vars=vari).to_dataframe()
         c1 = c1[c1.columns[c1.columns != 'vars']]
         c2 = applySDM(w1[vari], c1, meth=meth)
@@ -130,157 +140,209 @@ def climate_indices(weather: xr.Dataset, climate: xr.Dataset, stati='coast', cli
     return
 
 
-def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
+def data_select(dataManager: DataManager, config: Config, container=st) -> Config:
+    """Create the user interface to control the data view
     """
-    """
-    # load data
+    # get a station list
+    weather = dataManager['weather'].read()
+    station_list = list(weather.keys())
+    selected_station = container.selectbox('Select station/group (see map in sidebar for location):', station_list)
+
+    # select a temporal aggregation
+    aggregations = config.get('temporal_aggregations', ['Annual', 'Monthly'])
+    temp_agg = container.selectbox('Select temporal aggregation:', aggregations)
+
+    # include climate projections
+    include_climate = container.checkbox('Include climate projections (for coastal region)', value=False)
+
+    # add settings
+    config['selected_station'] = selected_station
+    config['temp_agg'] = temp_agg
+    config['include_climate'] = include_climate
+
+    return config
+
+
+@partial_memoize(hash_names=['reducer', 'station', 'variable', 'time'])
+def _reduce_weather_data(dataManager: DataManager, reducer: Callable, station: str, variable: str, time: str) -> Tuple(pd.DataFrame, pd.DataFrame):
+    # get weather data
     weather = dataManager['weather'].read()
 
-    statios = list(weather.keys())
-    stat1 = st.selectbox('Select station/group (see map in sidebar for location):', statios)
+    # reduce to station and variable
+    reduced = weather[station].sel(vars=variable).resample(time=time).apply(reducer)
 
-    aspects = ['Annual', 'Monthly']  # , 'Season']
-    w_aspect = st.selectbox('Select temporal aggegate:', aspects)
+    # change to dataframe
+    wdata = reduced.to_dataframe()[station]
+    wdata = wdata[~np.isnan(wdata)]
+    
+    # reduce for all stations
+    reduced = weather.sel(vars=variable).resample(time=time).apply(reducer)
+    reference = reduced.to_dataframe().iloc[:, 1:]
 
-    cliproj = st.checkbox('add climate projections (for coastal region)',False)
-    if cliproj:
-        plt_map(stat1, 'CORDEX')
+    return wdata, reference
+
+
+def warming_data_plotter(dataManager: DataManager, config: Config):
+    # TODO refactor in data-aggregator and data-plotter for different time frames
+
+    # ----
+    # data-aggregator controls
+    navi_vars = ['Maximum Air Temperature', 'Mean Air Temperature', 'Minimum Air Temperature']
+    navi_var = st.sidebar.radio("Select variable:", options=navi_vars)
+    if navi_var[:4] == 'Mini':
+        vari = 'Tmin'
+        afu = np.min
+        ag = 'min'
+    elif navi_var[:4] == 'Maxi':
+        vari = 'Tmax'
+        afu = np.max
+        ag = 'max'
+    else:
+        vari = 'T'
+        afu = np.mean
+        ag = 'mean'
+
+    # controls end
+    # ----
+
+    # TODO: this produces a slider but also needs some data caching
+    if config['temp_agg'] == 'Annual':
+        wdata, allw = _reduce_weather_data(dataManager, afu, config['selected_station'], vari, '1Y')
+        
+        dataLq = float(np.floor(allw.min().quantile(0.22)))
+        datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
+        
+        if config['include_climate']:
+            rcps = ['rcp26', 'rcp45', 'rcp85']
+            rcp = st.selectbox(
+                'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
+                rcps)
+
+            data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()
+            data = data[data.columns[data.columns != 'vars']]
+            data_ub = applySDM(wdata, data, meth='abs')
+
+            dataUq = float(np.ceil(data_ub.max().quantile(0.76)))
+            datamax = float(np.max([dataUq, np.round(data_ub.max().max(), 1)]))
+        else:
+            dataUq = float(np.ceil(allw.max().quantile(0.76)))
+            datamax = float(np.max([dataUq,np.round(allw.max().max(), 1)]))
+
+        datarng = st.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
+
+        # -------------------
+        # start plotting plot
+        if config['include_climate']:
+            ax = kde(wdata, data_ub.mean(axis=1), split_ts=3)
+        else:
+            ax = kde(wdata, split_ts=3)
+
+        ax.set_title(stat1 + ' Annual ' + navi_var)
+        ax.set_xlabel('T (°C)')
+        ax.set_xlim(datarng[0],datarng[1])
+        st.pyplot()
+
+        sndstat = st.checkbox('Show second station for comparison')
+
+        if sndstat:
+            stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
+            wdata2 = weather[stat2].sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()[stat2]
+
+            ax2 = kde(wdata2, split_ts=3)
+            ax2.set_title(stat2 + ' Annual ' + navi_var)
+            ax2.set_xlabel('T (°C)')
+            ax2.set_xlim(datarng[0],datarng[1])
+            st.pyplot()
+
+        # Re-implement this as a application wide service
+        # expl_md = read_markdown_file('explainer/stripes.md')
+        # st.markdown(expl_md, unsafe_allow_html=True)
+
+    elif config['temp_agg'] == 'Monthly':
+        wdata = weather[stat1].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat1]
+        wdata = wdata[~np.isnan(wdata)]
+        ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
+
+        if config['include_climate']:
+            rcps = ['rcp26', 'rcp45', 'rcp85']
+            rcp = st.selectbox('RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):', rcps)
+
+            data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()
+            data = data[data.columns[data.columns != 'vars']]
+
+            #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
+            ub = True # simplify here and automatically apply bias correction
+
+            if ub:
+                data_ub = applySDM(wdata, data, meth='abs')
+                yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]),ref_yr, ag, li=2006)
+            else:
+                yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
+
+            plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
+            st.pyplot()
+
+
+        # TODO: break up this as well
+        else:
+            yrplot_hm(wdata,ref_yr,ag)
+            plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
+            st.pyplot()
+
+            sndstat = st.checkbox('Compare to a second station?')
+
+            if sndstat:
+                stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
+                data2 = weather[stat2].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat2]
+                data2 = data2[~np.isnan(data2)]
+
+                ref_yr2 = list(ref_yr)
+                if ref_yr2[1]<data2.index.year.min():
+                    ref_yr2[0] = data2.index.year.min()
+                    ref_yr2[1] = ref_yr2[0]+10
+                if ref_yr2[0]<data2.index.year.min():
+                    ref_yr2[0] = data2.index.year.min()
+                    if ref_yr2[1] - ref_yr2[0] < 10:
+                        ref_yr2[1] = ref_yr2[0] + 10
+
+                yrplot_hm(data2, ref_yr2, ag)
+                plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
+                st.pyplot()
+
+        # Re-implement this as a application wide service
+        # expl_md = read_markdown_file('explainer/stripes_m.md')
+        # st.markdown(expl_md, unsafe_allow_html=True)
+
+
+def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
+    """
+    TODO: refactor this whole app into the main_app
+    """
+    # update config with current data settings
+    config = data_select(dataManager, config, container=st)
+
+    # check config
+    if config['include_climate']:
+        fig = plt_map(dataManager, sel=config['selected_station'], cm='CORDEX')
+        st.sidebar.plotly_chart(fig)
         st.sidebar.markdown(
             '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>). The climate model grid is given in <span style="color:orange">orange</span> with the selected references as filled dots.''',
             unsafe_allow_html=True)
     else:
-        plt_map(stat1)
+        fig = plt_map(dataManager, sel=config['selected_station'])
+        st.sidebar.plotly_chart(fig)
         st.sidebar.markdown(
             '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>).''',
             unsafe_allow_html=True)
 
+    # switch the topic
     if w_topic == 'Warming':
-
-        navi_vars = ['Maximum Air Temperature', 'Mean Air Temperature', 'Minimum Air Temperature']
-        navi_var = st.sidebar.radio("Select variable:", options=navi_vars)
-        if navi_var[:4] == 'Mini':
-            vari = 'Tmin'
-            afu = np.min
-            ag = 'min'
-        elif navi_var[:4] == 'Maxi':
-            vari = 'Tmax'
-            afu = np.max
-            ag = 'max'
-        else:
-            vari = 'T'
-            afu = np.mean
-            ag = 'mean'
-
-        if w_aspect == 'Annual':
-            wdata = weather[stat1].sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()[stat1]
-            wdata = wdata[~np.isnan(wdata)]
-            allw = weather.sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe().iloc[:, 1:]
-
-            dataLq = float(np.floor(allw.min().quantile(0.22)))
-            datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
-            if cliproj:
-                rcps = ['rcp26', 'rcp45', 'rcp85']
-                rcp = st.selectbox(
-                    'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
-                    rcps)
-
-                data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()
-                data = data[data.columns[data.columns != 'vars']]
-                data_ub = applySDM(wdata, data, meth='abs')
-
-                dataUq = float(np.ceil(data_ub.max().quantile(0.76)))
-                datamax = float(np.max([dataUq, np.round(data_ub.max().max(), 1)]))
-            else:
-                dataUq = float(np.ceil(allw.max().quantile(0.76)))
-                datamax = float(np.max([dataUq,np.round(allw.max().max(), 1)]))
-
-            datarng = st.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
-
-            if cliproj:
-                ax = kde(wdata, data_ub.mean(axis=1), split_ts=3)
-            else:
-                ax = kde(wdata, split_ts=3)
-
-            ax.set_title(stat1 + ' Annual ' + navi_var)
-            ax.set_xlabel('T (°C)')
-            ax.set_xlim(datarng[0],datarng[1])
-            st.pyplot()
-
-            sndstat = st.checkbox('Show second station for comparison')
-
-            if sndstat:
-                stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-                wdata2 = weather[stat2].sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()[stat2]
-
-                ax2 = kde(wdata2, split_ts=3)
-                ax2.set_title(stat2 + ' Annual ' + navi_var)
-                ax2.set_xlabel('T (°C)')
-                ax2.set_xlim(datarng[0],datarng[1])
-                st.pyplot()
-
-            # Re-implement this as a application wide service
-            # expl_md = read_markdown_file('explainer/stripes.md')
-            # st.markdown(expl_md, unsafe_allow_html=True)
-
-        elif w_aspect == 'Monthly':
-            wdata = weather[stat1].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat1]
-            wdata = wdata[~np.isnan(wdata)]
-            ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
-
-            if cliproj:
-                rcps = ['rcp26', 'rcp45', 'rcp85']
-                rcp = st.selectbox('RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):', rcps)
-
-                data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()
-                data = data[data.columns[data.columns != 'vars']]
-
-                #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
-                ub = True # simplify here and automatically apply bias correction
-
-                if ub:
-                    data_ub = applySDM(wdata, data, meth='abs')
-                    yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]),ref_yr, ag, li=2006)
-                else:
-                    yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
-
-                plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-                st.pyplot()
-
-
-
-            else:
-                yrplot_hm(wdata,ref_yr,ag)
-                plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-                st.pyplot()
-
-                sndstat = st.checkbox('Compare to a second station?')
-
-                if sndstat:
-                    stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-                    data2 = weather[stat2].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat2]
-                    data2 = data2[~np.isnan(data2)]
-
-                    ref_yr2 = list(ref_yr)
-                    if ref_yr2[1]<data2.index.year.min():
-                        ref_yr2[0] = data2.index.year.min()
-                        ref_yr2[1] = ref_yr2[0]+10
-                    if ref_yr2[0]<data2.index.year.min():
-                        ref_yr2[0] = data2.index.year.min()
-                        if ref_yr2[1] - ref_yr2[0] < 10:
-                            ref_yr2[1] = ref_yr2[0] + 10
-
-                    yrplot_hm(data2, ref_yr2, ag)
-                    plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
-                    st.pyplot()
-
-            # Re-implement this as a application wide service
-            # expl_md = read_markdown_file('explainer/stripes_m.md')
-            # st.markdown(expl_md, unsafe_allow_html=True)
-
+        warming_data_plotter(dataManager, config)
+    
     elif w_topic == 'Weather Indices':
-        climate_indices(stat1,cliproj)
+        climate_indices(config)
 
-    if cliproj:
+    if config['include_climate']:
         st.markdown(
             '''RCPs are scenarios about possible greenhouse gas concentrations by the year 2100. RCP2.6 is a world in which little further greenhouse gasses are emitted -- similar to the Paris climate agreement from 2015. RCP8.5 was intendent to explore a rather risky, more worst-case future with further increased emissions. RCP4.5 is one candidate of a more moderate greenhouse gas projection, which might be more likely to resemble a realistic situation. It is important to note that the very limited differentiation between RCP scenarios have been under debate for several years. One outcome is the definition of Shared Socioeconomic Pathways (SSPs) for which today, however, there are not very many model runs awailable. For more information, please check with the [Climatescenario Primer](https://climatescenarios.org/primer/), [CarbonBrief](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change) and this [NatureComment](https://www.nature.com/articles/d41586-020-00177-3)''',
             unsafe_allow_html=True)
@@ -288,8 +350,6 @@ def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
 
 def main_app(**kwargs):
     """Describe the params in kwargs here
-
-    The main weather explorer app accepts all 
     """
     # build the config and dataManager from kwargs
     url_params = st.experimental_get_query_params()

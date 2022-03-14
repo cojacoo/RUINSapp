@@ -3,10 +3,15 @@ Build a :class:`Config <ruins.core.Config>` and a
 :class:`DataManager <ruins.core.DataManager>` from a kwargs dict.
 """
 from typing import Union, Tuple, Dict, List
+import streamlit as st
 
 from .config import Config
 from .data_manager import DataManager
 
+
+st.experimental_singleton
+def contextualized_data_manager(**kwargs) -> DataManager:
+    return DataManager(**kwargs)
 
 
 def build_config(omit_dataManager: bool = False, url_params: Dict[str, List[str]] = {}, **kwargs) -> Tuple[Config, Union[None, DataManager]]:
@@ -28,8 +33,8 @@ def build_config(omit_dataManager: bool = False, url_params: Dict[str, List[str]
     config = Config(**kwargs)
 
     if omit_dataManager:
-        return config
+        return config,  None
     else:
         if dataManager is None:
-            dataManager = DataManager(**config)
+            dataManager = contextualized_data_manager(**config)
         return config, dataManager

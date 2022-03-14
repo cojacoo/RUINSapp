@@ -67,10 +67,15 @@ class FileSource(DataSource, abc.ABC):
     Abstract base class for file sources. This provides the common interface
     for every data source that is based on a file.
     """
-    def __init__(self, path: str, cache: bool = True, **kwargs):
+    def __init__(self, path: str, cache: bool = True, hot_load = False, **kwargs):
         super().__init__(**kwargs)
         self.path = path
         self.cache = cache
+        
+        # check if the dataset should be pre-loaded
+        if hot_load:
+            self.cache = True
+            self.data = self._load_source()
 
     @abc.abstractmethod
     def _load_source(self):
@@ -139,7 +144,7 @@ class DataManager(Mapping):
         The include_mimes can be overwritten by passing filenames directly.
 
     """
-    def __init__(self, datapath: str = None, cache: bool = True, debug: bool = False, **kwargs) -> None:
+    def __init__(self, datapath: str = None, cache: bool = True, hot_load = False, debug: bool = False, **kwargs) -> None:
         """
         You can pass in a Config as kwargs.
         """
@@ -148,9 +153,9 @@ class DataManager(Mapping):
             from ruins.core import Config
             self.from_config(**Config(**kwargs))
         else:
-            self.from_config(datapath=datapath, cache=cache, debug=debug, **kwargs)
+            self.from_config(datapath=datapath, cache=cache, hot_load=hot_load, debug=debug, **kwargs)
     
-    def from_config(self, datapath: str = None, cache: bool = True, debug: bool = False, **kwargs) -> None:
+    def from_config(self, datapath: str = None, cache: bool = True, hot_load: bool = False, debug: bool = False, **kwargs) -> None:
         """
         Initialize the DataManager from a :class:`Config <ruins.core.Config>` object.
         """
@@ -158,6 +163,7 @@ class DataManager(Mapping):
         self._config = kwargs
         self._datapath = datapath
         self.cache = cache
+        self.hot_load = hot_load
         self.debug = debug
 
         # file settings
@@ -225,7 +231,7 @@ class DataManager(Mapping):
             
             # add the source
 #            args = self._config.get(basename, {})
-            args.update({'path': path, 'cache': self.cache})
+            args.update({'path': path, 'cache': self.cache, 'hot_load': self.hot_load})
             self._data_sources[basename] = BaseClass(**args)
         else:
             if not_exists == 'raise':

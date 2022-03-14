@@ -29,6 +29,7 @@ class Config(Mapping):
         # path 
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
         self.datapath = pjoin(self.basepath, 'data')
+        self.hot_load = kwargs.get('hot_load', False)
 
         # mime readers
         self.default_sources = {
@@ -52,7 +53,7 @@ class Config(Mapping):
         self.topic_list = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
 
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args', 'layout', 'topic_list']
+        self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
@@ -89,3 +90,8 @@ class Config(Mapping):
     
     def __getitem__(self, key: str):
         return getattr(self, key)
+    
+    def __setitem__(self, key: str, value):
+        setattr(self, key, value)
+        if key not in self._keys:
+            self._keys.append(key)

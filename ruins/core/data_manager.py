@@ -99,8 +99,11 @@ class HDF5Source(FileSource):
     """
     HDF5 file sources. This class is used to load HDF5 files.
     """
-    def _load_source(self):
+    def _load_source(self) -> xr.Dataset:
         return xr.open_dataset(self.path)
+    
+    def read(self) -> xr.Dataset:
+        return super(HDF5Source, self).read()
 
 
 class CSVSource(FileSource):
@@ -261,7 +264,7 @@ class DataManager(Mapping):
         for name in self._data_sources.keys():
             yield name
     
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> DataSource:
         """Return the requested datasource"""
         return self._data_sources[key]
 

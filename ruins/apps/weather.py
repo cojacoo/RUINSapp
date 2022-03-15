@@ -360,12 +360,14 @@ def main_app(**kwargs):
 
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
 
+    # config expander
+    exp = st.sidebar.expander('Data select and config', expanded=False)
+
     # build the app
     st.header('Weather Data Explorer')
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
     # topic selector
-    exp = st.expander('CONFIG', expanded=False)
     components.topic_selector(config=config, container=st.sidebar, config_expander=exp)
     
     # TODO refactor this

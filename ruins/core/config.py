@@ -1,3 +1,5 @@
+from streamlit import session_state
+
 import os
 from os.path import join as pjoin
 import json
@@ -78,8 +80,35 @@ class Config(Mapping):
             if k not in self._keys:
                 self._keys.append(k)
     
+    def get_control_policy(self, control_name: str) -> str:
+        """
+        Get the control policy for the given control name.
+
+        allowed policies are:
+            - show: always show the control on the main container
+            - hide: hide the control on the main container, but move to the expander
+            - ignore: don't show anything
+
+        """
+        if self.has_key(f'{control_name}_policy'):
+            return self.get(f'{control_name}_policy')
+        elif self.has_key('controls_policy'):
+            return self.get('controls_policy')
+        else:
+            # TODO: discuss with conrad to change this
+            return 'show'
+
+    
     def get(self, key: str, default = None):
-        return getattr(self, key, default)
+        if hasattr(self, key):
+            return getattr(self, key)
+        elif key in session_state:
+            return session_state[key]
+        else:
+            return default
+    
+    def has_key(self, key) -> bool:
+        return hasattr(self, key) or hasattr(session_state, key)
     
     def __len__(self) -> int:
         return len(self._keys)
@@ -89,7 +118,12 @@ class Config(Mapping):
             yield k
     
     def __getitem__(self, key: str):
-        return getattr(self, key)
+        if hasattr(self, key):
+            return getattr(self, key)
+        elif key in session_state:
+            return session_state[key]
+        else:
+            raise KeyError(f"Key {key} not found")
     
     def __setitem__(self, key: str, value):
         setattr(self, key, value)

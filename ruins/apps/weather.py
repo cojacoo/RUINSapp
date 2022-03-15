@@ -66,7 +66,7 @@ def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
 def climate_indices(dataManager: DataManager, config: Config):
     # get data
     weather = dataManager['weather'].read()
-    climate = dataManager['codex_coast'].read()
+    climate = dataManager['cordex_coast'].read()
 
     # get the relevant settings
     stati = config.get('selected_station', 'coast')
@@ -140,7 +140,7 @@ def climate_indices(dataManager: DataManager, config: Config):
     return
 
 
-def data_select(dataManager: DataManager, config: Config, container=st) -> Config:
+def data_select(dataManager: DataManager, config: Config, container=st) -> None:
     """Create the user interface to control the data view
     """
     # get a station list
@@ -156,11 +156,9 @@ def data_select(dataManager: DataManager, config: Config, container=st) -> Confi
     include_climate = container.checkbox('Include climate projections (for coastal region)', value=False)
 
     # add settings
-    config['selected_station'] = selected_station
-    config['temp_agg'] = temp_agg
-    config['include_climate'] = include_climate
-
-    return config
+    st.session_state.selected_station = selected_station
+    st.session_state.temp_agg = temp_agg
+    st.session_state.include_climate = include_climate
 
 
 @partial_memoize(hash_names=['reducer', 'station', 'variable', 'time'])
@@ -183,6 +181,11 @@ def _reduce_weather_data(dataManager: DataManager, reducer: Callable, station: s
 
 
 def warming_data_plotter(dataManager: DataManager, config: Config):
+    weather: xr.Dataset = dataManager['weather'].read()
+    climate = dataManager['cordex_coast'].read()
+    statios = dataManager['stats'].read()
+    stat1 = config['selected_station']
+
     # TODO refactor in data-aggregator and data-plotter for different time frames
 
     # ----
@@ -247,7 +250,6 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         if sndstat:
             stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
             wdata2 = weather[stat2].sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()[stat2]
-
             ax2 = kde(wdata2, split_ts=3)
             ax2.set_title(stat2 + ' Annual ' + navi_var)
             ax2.set_xlabel('T (°C)')
@@ -314,12 +316,12 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # st.markdown(expl_md, unsafe_allow_html=True)
 
 
-def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
+def weather_explorer(config: Config, dataManager: DataManager):
     """
     TODO: refactor this whole app into the main_app
     """
-    # update config with current data settings
-    config = data_select(dataManager, config, container=st)
+    # update session state with current data settings
+    data_select(dataManager, config, container=st)
 
     # check config
     if config['include_climate']:
@@ -336,11 +338,12 @@ def weather_explorer(w_topic: str, config: Config, dataManager: DataManager):
             unsafe_allow_html=True)
 
     # switch the topic
-    if w_topic == 'Warming':
+    topic = config['current_topic']
+    if topic == 'Warming':
         warming_data_plotter(dataManager, config)
     
-    elif w_topic == 'Weather Indices':
-        climate_indices(config)
+    elif topic == 'Weather Indices':
+        climate_indices(dataManager, config)
 
     if config['include_climate']:
         st.markdown(
@@ -362,10 +365,11 @@ def main_app(**kwargs):
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
     # topic selector
-    topic = components.topic_selector(topic_list=config.topic_list, container=st.sidebar)
+    exp = st.expander('CONFIG', expanded=False)
+    components.topic_selector(config=config, container=st.sidebar, config_expander=exp)
     
     # TODO refactor this
-    weather_explorer(topic, config, dataManager)
+    weather_explorer(config, dataManager)
 
 
 if __name__ == '__main__':

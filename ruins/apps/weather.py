@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 import streamlit as st
 import xarray as xr     # TODO: these references should be moved to DataManager
 import pandas as pd     # TODO: these references should be moved to DataManager

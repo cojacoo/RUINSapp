@@ -1,4 +1,4 @@
-from typing import List, Callable
+from typing import List, Callable, Tuple
 import streamlit as st
 import xarray as xr     # TODO: these references should be moved to DataManager
 import pandas as pd     # TODO: these references should be moved to DataManager
@@ -164,7 +164,7 @@ def data_select(dataManager: DataManager, config: Config, container=st) -> Confi
 
 
 @partial_memoize(hash_names=['reducer', 'station', 'variable', 'time'])
-def _reduce_weather_data(dataManager: DataManager, reducer: Callable, station: str, variable: str, time: str) -> Tuple(pd.DataFrame, pd.DataFrame):
+def _reduce_weather_data(dataManager: DataManager, reducer: Callable, station: str, variable: str, time: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # get weather data
     weather = dataManager['weather'].read()
 

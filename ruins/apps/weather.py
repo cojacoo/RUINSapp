@@ -161,23 +161,31 @@ def data_select(dataManager: DataManager, config: Config, container=st) -> None:
     st.session_state.include_climate = include_climate
 
 
-@partial_memoize(hash_names=['reducer', 'station', 'variable', 'time'])
-def _reduce_weather_data(dataManager: DataManager, reducer: Callable, station: str, variable: str, time: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+@partial_memoize(hash_names=['station', 'variable', 'time'])
+def _reduce_weather_data(dataManager: DataManager, variable: str, time: str, station: str = None ) -> pd.DataFrame:
     # get weather data
     weather = dataManager['weather'].read()
 
+    if station is None:
+        base = weather
+    else:
+        base = weather[station]
+
     # reduce to station and variable
-    reduced = weather[station].sel(vars=variable).resample(time=time).apply(reducer)
+    reduced = base.sel(vars=variable).resample(time=time)
 
-    # change to dataframe
-    wdata = reduced.to_dataframe()[station]
-    wdata = wdata[~np.isnan(wdata)]
+    if variable == 'Tmax':
+        df = reduced.max(dim='time').to_dataframe()
+    elif variable == 'Tmin':
+        df = reduced.min(dim='time').to_dataframe()
+    else:
+        df = reduced.mean(dim='time').to_dataframe()
     
-    # reduce for all stations
-    reduced = weather.sel(vars=variable).resample(time=time).apply(reducer)
-    reference = reduced.to_dataframe().iloc[:, 1:]
-
-    return wdata, reference
+    if station is None:
+        return df.iloc[:, 1:]
+    else:
+        return df[station]
+        
 
 
 def warming_data_plotter(dataManager: DataManager, config: Config):
@@ -194,15 +202,12 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     navi_var = st.sidebar.radio("Select variable:", options=navi_vars)
     if navi_var[:4] == 'Mini':
         vari = 'Tmin'
-        afu = np.min
         ag = 'min'
     elif navi_var[:4] == 'Maxi':
         vari = 'Tmax'
-        afu = np.max
         ag = 'max'
     else:
         vari = 'T'
-        afu = np.mean
         ag = 'mean'
 
     # controls end
@@ -210,8 +215,9 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
 
     # TODO: this produces a slider but also needs some data caching
     if config['temp_agg'] == 'Annual':
-        wdata, allw = _reduce_weather_data(dataManager, afu, config['selected_station'], vari, '1Y')
-        
+        wdata = _reduce_weather_data(dataManger=dataManager, station=config['selected_station'], variable=vari, time='1Y')
+        allw = _reduce_weather_data(dataManager=dataManager, variable=vari, time='1Y')
+
         dataLq = float(np.floor(allw.min().quantile(0.22)))
         datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
         

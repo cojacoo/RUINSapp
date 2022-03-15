@@ -6,43 +6,43 @@ Topic Selector
 from typing import List
 import streamlit as st
 
+from ruins.core import Config
 
-def topic_selector(topic_list: List[str], force_topic_select: bool = True, container=st, **kwargs) -> str:
+
+def topic_selector(config: Config, container=st, config_expander=st) -> str:
     """
-    Select a topic from a list of topics. The selected topic is returned and
-    additionally published to the session cache.
-
-    Parameters
-    ----------
-    topic_list : List[str]
-        List of topics to select from.
-    force_topic_select : bool
-        If False, the dropdown will not be shown if a topic was already
-        selected and is present in the streamlit session cache.
-        Default: True
-    container : streamlit.st.container
-        Container to use for the dropdown. Defaults to main streamlit.
-    **kwargs
-        These keyword arguments are only accepted to directly inject
-        :class:`Config <ruins.config.Config>` objects.
+    TODO: Alex will das dokumentieren....
     """
-    # check if a topic is already present
-    if kwargs.get('no_cache', False):
-        current_topic = kwargs.get('current_topic', None)
-    else:  # pragma: no cover
-        current_topic = st.session_state.get('topic', kwargs.get('current_topic', None))
-    if current_topic is not None and not force_topic_select:
-        return current_topic
+    current_topic = config.get('current_topic')
     
-    # otherwise print select
-    topic = st.selectbox(
-        'Select a topic',
-        topic_list, 
-        index=0 if current_topic is None else topic_list.index(current_topic)
-    )
+    # get topic list
+    topic_list = config['topic_list']
 
-    # store topic in session cache
-    if current_topic != topic and not kwargs.get('no_cache', False): # pragma: no cover
-        st.session_state['topic'] = topic
+    # get the policy
+    policy = config.get_control_policy('topic_selector')
+
+    # create the control
+    if current_topic is not None:
+        topic = container.selectbox('Select a topic', topic_list)
     
-    return topic
+    elif policy == 'show':
+        topic = container.selectbox(
+            'Select a topic',
+            topic_list,
+            #index=topic_list.index(config['current_topic'])
+        )
+    
+    elif policy == 'hide':
+        topic = config_expander.selectbox(
+            'Select a topic',
+            topic_list,
+            #index=topic_list.index(config['current_topic'])
+        )
+    
+    else:
+        topic = current_topic
+
+    # set the new topic
+    if current_topic != topic:
+        st.session_state.current_topic = topic
+

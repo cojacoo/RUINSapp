@@ -15,8 +15,8 @@ def partial_memoize(hash_names: List[str], store: str = 'local'):
     def func_decorator(f: Callable):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            argnames = [a for a in args if a in hash_names]
-            argnames.extend([v for k, v in kwargs.items() if k in hash_names])
+            argnames = [str(a) for a in args if a in hash_names]
+            argnames.extend([str(v) for k, v in kwargs.items() if k in hash_names])
             
             # get the parameter hash
             h = _hashargs(f.__name__, argnames)

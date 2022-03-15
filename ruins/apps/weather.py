@@ -161,15 +161,18 @@ def data_select(dataManager: DataManager, config: Config, container=st) -> None:
     st.session_state.include_climate = include_climate
 
 
-@partial_memoize(hash_names=['station', 'variable', 'time'])
-def _reduce_weather_data(dataManager: DataManager, variable: str, time: str, station: str = None ) -> pd.DataFrame:
+@partial_memoize(hash_names=['name', 'station', 'variable', 'time', '_filter'])
+def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, time: str, station: str = None, _filter: dict = None) -> pd.DataFrame:
     # get weather data
-    weather = dataManager['weather'].read()
+    arr: xr.Dataset = dataManager[name].read()
+
+    if _filter is not None:
+        arr = arr.filter_by_attrs(**_filter)
 
     if station is None:
-        base = weather
+        base = arr
     else:
-        base = weather[station]
+        base = arr[station]
 
     # reduce to station and variable
     reduced = base.sel(vars=variable).resample(time=time)
@@ -182,10 +185,9 @@ def _reduce_weather_data(dataManager: DataManager, variable: str, time: str, sta
         df = reduced.mean(dim='time').to_dataframe()
     
     if station is None:
-        return df.iloc[:, 1:]
+        return df.loc[:, df.columns != 'vars']
     else:
-        return df[station]
-        
+        return df[station]       
 
 
 def warming_data_plotter(dataManager: DataManager, config: Config):
@@ -215,8 +217,8 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
 
     # TODO: this produces a slider but also needs some data caching
     if config['temp_agg'] == 'Annual':
-        wdata = _reduce_weather_data(dataManger=dataManager, station=config['selected_station'], variable=vari, time='1Y')
-        allw = _reduce_weather_data(dataManager=dataManager, variable=vari, time='1Y')
+        wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1Y')
+        allw = _reduce_weather_data(dataManager, name='weather', variable=vari, time='1Y')
 
         dataLq = float(np.floor(allw.min().quantile(0.22)))
         datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
@@ -227,8 +229,9 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                 'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
                 rcps)
 
-            data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()
-            data = data[data.columns[data.columns != 'vars']]
+            #data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()
+            #data = data[data.columns[data.columns != 'vars']]
+            data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1Y', _filter=dict(RCP=rcp))
             data_ub = applySDM(wdata, data, meth='abs')
 
             dataUq = float(np.ceil(data_ub.max().quantile(0.76)))

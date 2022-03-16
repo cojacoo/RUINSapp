@@ -145,7 +145,7 @@ def data_select(dataManager: DataManager, config: Config, container=st) -> None:
     """
     # get a station list
     weather = dataManager['weather'].read()
-    station_list = list(weather.keys())
+    station_list = list(weather.keys()) # TODO station names krummhoern, coast, inland, niedersachsen?
     selected_station = container.selectbox('Select station/group (see map in sidebar for location):', station_list)
 
     # select a temporal aggregation
@@ -193,7 +193,7 @@ def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, tim
 def warming_data_plotter(dataManager: DataManager, config: Config):
     weather: xr.Dataset = dataManager['weather'].read()
     climate = dataManager['cordex_coast'].read()
-    statios = dataManager['stats'].read()
+    statios = dataManager['stats'].read().index # TODO weather also has 'station names' krummhoern, coast, inland, niedersachsen?
     stat1 = config['selected_station']
 
     # TODO refactor in data-aggregator and data-plotter for different time frames
@@ -229,8 +229,6 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                 'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
                 rcps)
 
-            #data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()
-            #data = data[data.columns[data.columns != 'vars']]
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1Y', _filter=dict(RCP=rcp))
             data_ub = applySDM(wdata, data, meth='abs')
 
@@ -257,8 +255,9 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         sndstat = st.checkbox('Show second station for comparison')
 
         if sndstat:
-            stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-            wdata2 = weather[stat2].sel(vars=vari).resample(time='1Y').apply(afu).to_dataframe()[stat2]
+            stat2 = st.selectbox('Select second station:', [x for x in statios if x != config['selected_station']])
+            wdata2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1Y')
+
             ax2 = kde(wdata2, split_ts=3)
             ax2.set_title(stat2 + ' Annual ' + navi_var)
             ax2.set_xlabel('T (°C)')
@@ -270,16 +269,15 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # st.markdown(expl_md, unsafe_allow_html=True)
 
     elif config['temp_agg'] == 'Monthly':
-        wdata = weather[stat1].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat1]
-        wdata = wdata[~np.isnan(wdata)]
+        wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1M')
+
         ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
 
         if config['include_climate']:
             rcps = ['rcp26', 'rcp45', 'rcp85']
             rcp = st.selectbox('RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):', rcps)
 
-            data = climate.filter_by_attrs(RCP=rcp).sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()
-            data = data[data.columns[data.columns != 'vars']]
+            data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1M', _filter=dict(RCP=rcp))
 
             #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
             ub = True # simplify here and automatically apply bias correction
@@ -304,8 +302,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
 
             if sndstat:
                 stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-                data2 = weather[stat2].sel(vars=vari).resample(time='1M').apply(afu).to_dataframe()[stat2]
-                data2 = data2[~np.isnan(data2)]
+                data2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1M')
 
                 ref_yr2 = list(ref_yr)
                 if ref_yr2[1]<data2.index.year.min():

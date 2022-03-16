@@ -193,7 +193,7 @@ def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, tim
 def warming_data_plotter(dataManager: DataManager, config: Config):
     weather: xr.Dataset = dataManager['weather'].read()
     climate = dataManager['cordex_coast'].read()
-    statios = dataManager['stats'].read().index # TODO weather also has 'station names' krummhoern, coast, inland, niedersachsen?
+    statios = list(weather.keys())
     stat1 = config['selected_station']
 
     # TODO refactor in data-aggregator and data-plotter for different time frames

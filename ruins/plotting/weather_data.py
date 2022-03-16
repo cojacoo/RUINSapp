@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature anomaly (K)', cmx='coolwarm', cmxeq=True, li=False):

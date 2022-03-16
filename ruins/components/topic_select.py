@@ -25,14 +25,14 @@ def topic_selector(config: Config, container=st, config_expander=st) -> str:
     if current_topic is not None:
         topic = container.selectbox('Select a topic', topic_list)
     
-    elif policy == 'show':
+    elif policy == 'show': # pragma: no cover
         topic = container.selectbox(
             'Select a topic',
             topic_list,
             #index=topic_list.index(config['current_topic'])
         )
     
-    elif policy == 'hide':
+    elif policy == 'hide': # pragma: no cover
         topic = config_expander.selectbox(
             'Select a topic',
             topic_list,

@@ -1,9 +1,15 @@
 from streamlit import session_state
+import streamlit as st
 
 import os
 from os.path import join as pjoin
 import json
 from collections.abc import Mapping
+
+
+# check if streamlit is running
+if not st._is_running_with_streamlit:
+    session_state = dict()
 
 class Config(Mapping):
     """
@@ -108,7 +114,7 @@ class Config(Mapping):
             return default
     
     def has_key(self, key) -> bool:
-        return hasattr(self, key) or hasattr(session_state, key)
+        return hasattr(self, key) or hasattr(session_state, key) or key in session_state
     
     def __len__(self) -> int:
         return len(self._keys)

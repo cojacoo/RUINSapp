@@ -41,7 +41,7 @@ def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature a
     if ag == 'sum':
         dummy.iloc[:, 13] = dummy.iloc[:, 13] / 12
 
-    plt.figure(figsize=(8,len(dummy)/15.))
+    fig = plt.figure(figsize=(8,len(dummy)/15.))
     ax = sns.heatmap(dummy, cmap=cmx, vmin=vxL, vmax=vxU, cbar_kws={'label': cbar_title})
 
     if ref == None:
@@ -66,7 +66,8 @@ def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature a
 
     ax.set_ylabel('Year')
     ax.set_xlabel('Month          ')
-    return
+    
+    return fig
 
 
 def monthlyx(dy, dyx=1, ylab='T (°C)', clab1='Monthly Mean in Year', clab2='Monthly Max in Year', pls='cividis_r'):

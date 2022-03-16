@@ -88,7 +88,7 @@ def climate_indices(dataManager: DataManager, config: Config):
     w1 = weather[stati].sel(vars=vari).to_dataframe().dropna()
     w1.columns = ['bla', vari]
 
-    plt.figure(figsize=(10,2.5))
+    fig = plt.figure(figsize=(10,2.5))
     wi = climate_indi(w1, ci_topic).astype(int)
     wi.plot(style='.', color='steelblue', label='Coast weather')
     wi.rolling(10, center=True).mean().plot(color='steelblue', label='Rolling mean\n(10 years)')
@@ -123,7 +123,7 @@ def climate_indices(dataManager: DataManager, config: Config):
     plt.legend(ncol=2)
     plt.ylabel('Number of days')
     plt.title(ci_topic)
-    st.pyplot()
+    st.pyplot(fig)
 
     if ci_topic == 'Ice days (Tmax < 0°C)':
         st.markdown('''Number of days in one year which persistently remain below 0°C air temperature.''')
@@ -243,14 +243,14 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # -------------------
         # start plotting plot
         if config['include_climate']:
-            ax = kde(wdata, data_ub.mean(axis=1), split_ts=3)
+            fig, ax = kde(wdata, data_ub.mean(axis=1), split_ts=3)
         else:
-            ax = kde(wdata, split_ts=3)
+            fig, ax = kde(wdata, split_ts=3)
 
         ax.set_title(stat1 + ' Annual ' + navi_var)
         ax.set_xlabel('T (°C)')
         ax.set_xlim(datarng[0],datarng[1])
-        st.pyplot()
+        st.pyplot(fig)
 
         sndstat = st.checkbox('Show second station for comparison')
 
@@ -258,11 +258,11 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             stat2 = st.selectbox('Select second station:', [x for x in statios if x != config['selected_station']])
             wdata2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1Y')
 
-            ax2 = kde(wdata2, split_ts=3)
+            fig, ax2 = kde(wdata2, split_ts=3)
             ax2.set_title(stat2 + ' Annual ' + navi_var)
             ax2.set_xlabel('T (°C)')
             ax2.set_xlim(datarng[0],datarng[1])
-            st.pyplot()
+            st.pyplot(fig)
 
         # Re-implement this as a application wide service
         # expl_md = read_markdown_file('explainer/stripes.md')
@@ -284,19 +284,19 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
 
             if ub:
                 data_ub = applySDM(wdata, data, meth='abs')
-                yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]),ref_yr, ag, li=2006)
+                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]),ref_yr, ag, li=2006)
             else:
-                yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
+                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
 
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot()
+            st.pyplot(fig)
 
 
         # TODO: break up this as well
         else:
-            yrplot_hm(wdata,ref_yr,ag)
+            fig = yrplot_hm(wdata,ref_yr,ag)
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot()
+            st.pyplot(fig)
 
             sndstat = st.checkbox('Compare to a second station?')
 
@@ -313,9 +313,9 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                     if ref_yr2[1] - ref_yr2[0] < 10:
                         ref_yr2[1] = ref_yr2[0] + 10
 
-                yrplot_hm(data2, ref_yr2, ag)
+                fig = yrplot_hm(data2, ref_yr2, ag)
                 plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
-                st.pyplot()
+                st.pyplot(fig)
 
         # Re-implement this as a application wide service
         # expl_md = read_markdown_file('explainer/stripes_m.md')

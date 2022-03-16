@@ -122,4 +122,4 @@ def kde(data, cmdata='none', split_ts=1, cplot=True, eq_period=True):
 
     ax.set_ylabel('Occurrence (KDE)')
 
-    return ax
+    return fig, ax

@@ -1,7 +1,15 @@
+from streamlit import session_state
+import streamlit as st
+
 import os
 from os.path import join as pjoin
 import json
 from collections.abc import Mapping
+
+
+# check if streamlit is running
+if not st._is_running_with_streamlit:
+    session_state = dict()
 
 class Config(Mapping):
     """
@@ -29,6 +37,7 @@ class Config(Mapping):
         # path 
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
         self.datapath = pjoin(self.basepath, 'data')
+        self.hot_load = kwargs.get('hot_load', False)
 
         # mime readers
         self.default_sources = {
@@ -45,8 +54,14 @@ class Config(Mapping):
         }
         self.sources_args.update(kwargs.get('include_args', {}))
 
+        # app management
+        self.layout = 'centered'
+
+        # app content
+        self.topic_list = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'default_sources', 'sources_args']
+        self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
@@ -71,8 +86,35 @@ class Config(Mapping):
             if k not in self._keys:
                 self._keys.append(k)
     
+    def get_control_policy(self, control_name: str) -> str:
+        """
+        Get the control policy for the given control name.
+
+        allowed policies are:
+            - show: always show the control on the main container
+            - hide: hide the control on the main container, but move to the expander
+            - ignore: don't show anything
+
+        """
+        if self.has_key(f'{control_name}_policy'):
+            return self.get(f'{control_name}_policy')
+        elif self.has_key('controls_policy'):
+            return self.get('controls_policy')
+        else:
+            # TODO: discuss with conrad to change this
+            return 'show'
+
+    
     def get(self, key: str, default = None):
-        return getattr(self, key, default)
+        if hasattr(self, key):
+            return getattr(self, key)
+        elif key in session_state:
+            return session_state[key]
+        else:
+            return default
+    
+    def has_key(self, key) -> bool:
+        return hasattr(self, key) or hasattr(session_state, key) or key in session_state
     
     def __len__(self) -> int:
         return len(self._keys)
@@ -82,4 +124,14 @@ class Config(Mapping):
             yield k
     
     def __getitem__(self, key: str):
-        return getattr(self, key)
+        if hasattr(self, key):
+            return getattr(self, key)
+        elif key in session_state:
+            return session_state[key]
+        else:
+            raise KeyError(f"Key {key} not found")
+    
+    def __setitem__(self, key: str, value):
+        setattr(self, key, value)
+        if key not in self._keys:
+            self._keys.append(key)

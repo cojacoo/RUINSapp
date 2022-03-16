@@ -1,23 +1,29 @@
 import streamlit as st
 import plotly.graph_objs as go
 import plotly.express as px
+import pandas as pd
 import numpy as np
 
+from ruins.core import DataManager
+from ruins.core.cache import partial_memoize
 
-def plt_map(sel='all',cm='none'):
-    # TODO remove this part
-    import xarray as xr
-    import pandas as pd
-    dummy = xr.open_dataset('data/CORDEXgrid.nc')
-    dummy5 = xr.open_dataset('data/CMIP5grid.nc')
-    stats = pd.read_csv('data/stats.csv', index_col=0)
+
+@partial_memoize(hash_names=['sel', 'cm'])
+def plt_map(dataManager: DataManager, sel='all', cm='none') -> go.Figure:
+    # cordex_grid = xr.open_dataset('data/CORDEXgrid.nc')
+    # cimp_grid = xr.open_dataset('data/CMIP5grid.nc')
+    # stats = pd.read_csv('data/stats.csv', index_col=0)
+    cordex_grid = dataManager['CORDEXgrid'].read()
+    cimp_grid = dataManager['CMIP5grid'].read()
+    stats = dataManager['stats'].read()
+
     stats['ms'] = 15.
     stats['color'] = 'gray'
 
     mapbox_access_token = 'pk.eyJ1IjoiY29qYWNrIiwiYSI6IkRTNjV1T2MifQ.EWzL4Qk-VvQoaeJBfE6VSA'
     px.set_mapbox_access_token(mapbox_access_token)
 
-    nodexy = pd.DataFrame([dummy.lon.values.ravel(), dummy.lat.values.ravel()]).T
+    nodexy = pd.DataFrame([cordex_grid.lon.values.ravel(), cordex_grid.lat.values.ravel()]).T
     nodexy.columns = ['lon', 'lat']
     nodexy['hov'] = 'CORDEX grid'
 
@@ -127,8 +133,8 @@ def plt_map(sel='all',cm='none'):
                             [13, 13], [14, 13], [15, 13], [16, 13], [17, 13], [18, 13], [19, 14], [20, 14], [21, 13]]
         for cc in maskcordex_coast:
             fig.add_trace(go.Scattermapbox(
-                lat=[dummy.lat.values[tuple(cc)]],
-                lon=[dummy.lon.values[tuple(cc)]],
+                lat=[cordex_grid.lat.values[tuple(cc)]],
+                lon=[cordex_grid.lon.values[tuple(cc)]],
                 mode='markers',
                 marker=go.scattermapbox.Marker(
                     size=8,
@@ -143,11 +149,11 @@ def plt_map(sel='all',cm='none'):
     #fig = px.scatter_mapbox(nodexy, lat='lat', lon='lon', center={'lat': 53.0, 'lon': 8.3}, zoom=5, opacity=0.1, hover_data=['hov'])
     fig = px.scatter_mapbox(stats, lat='lat', lon='lon', center={'lat': 53.0, 'lon': 8.6}, zoom=5, size='ms', opacity=0.8, color='color', hover_data=['Station name', 'lat', 'lon'], size_max=10)
     if cm != 'none':
-        fig = lin_grid(fig, dummy)
-        fig = lin_grid(fig, dummy5, '#2c7fb8')
+        fig = lin_grid(fig, cordex_grid)
+        fig = lin_grid(fig, cimp_grid, '#2c7fb8')
         fig = add_cmpx(cm)
     fig = add_stats(sel)
     fig.update_layout(showlegend=False,width=300, height=350,margin=dict(l=10, r=10, b=10, t=10))  # ,center={'lat':54.0,'lon':8.3}, zoom=7)
-    st.sidebar.plotly_chart(fig)
-    return
+    # st.sidebar.plotly_chart(fig)
+    return fig
 

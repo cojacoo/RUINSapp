@@ -3,6 +3,7 @@ Test the config object
 """
 import os
 import json
+import pytest
 
 from ruins import core
 
@@ -62,3 +63,11 @@ def test_config_as_dict():
     # check default get behavior
     assert c.get('doesNotExist') is None
     assert c.get('doesNotExists', 'foobar') == 'foobar'
+
+
+def test_config_key_error():
+    """An unknown key should throw a key error"""
+    c = core.Config()
+
+    with pytest.raises(KeyError):
+        c['doesNotExist']

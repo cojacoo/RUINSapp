@@ -9,3 +9,4 @@ climate-indices
 pillow
 sklearn
 fire
+requests

@@ -11,7 +11,6 @@ RUN mkdir -p /src/data
 
 # copy the sources
 COPY ./ruins /src/ruins
-COPY ./data /src/data
 COPY ./requirements.txt /src/requirements.txt
 COPY ./setup.py /src/setup.py
 COPY ./README.md /src/README.md
@@ -20,6 +19,9 @@ COPY ./LICENSE /src/LICENSE
 # install
 RUN pip install --upgrade pip
 RUN cd /src && pip install -e .
+
+# download and install the data
+RUN python -c "from ruins.core import download_data_archive; download_data_archive()"
 
 # create the streamlit entrypoint
 WORKDIR /src/ruins/apps

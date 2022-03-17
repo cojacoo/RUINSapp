@@ -18,7 +18,7 @@ def version():
 
 
 setup(
-    name='ruins',
+    name='ruins-app',
     description='Climate change and uncertainty explorer',
     long_description=readme(),
     version=version(),

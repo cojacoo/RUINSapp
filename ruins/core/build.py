@@ -3,6 +3,11 @@ Build a :class:`Config <ruins.core.Config>` and a
 :class:`DataManager <ruins.core.DataManager>` from a kwargs dict.
 """
 from typing import Union, Tuple, Dict, List
+import os
+import shutil
+import requests
+import io
+import zipfile
 import streamlit as st
 
 from .config import Config
@@ -38,3 +43,35 @@ def build_config(omit_dataManager: bool = False, url_params: Dict[str, List[str]
         if dataManager is None:
             dataManager = contextualized_data_manager(**config)
         return config, dataManager
+
+
+def download_data_archive(path: str = None, url: str = 'http://ruins-test.hydrocode.de/data.zip', if_exists: str = 'error'):
+    """Download the data archive and extract into the data folder.
+    If the path is None, the default path inside the repo itself is used.
+    Then, you also need to change the datapath property of the application config.
+    If the data folder already exists and is not empty, the function will error on default.
+    You can pass ``if_exists='prune'`` to remove the existing data folder and replace it with the new one.
+    """
+    # use default path if none was provided
+    if path is None:
+        path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..', 'data'))
+    
+    # check if the data folder already exists
+    if os.path.exists(path) and len(os.listdir(path)) > 0:
+        if if_exists == 'error':
+            raise OSError(f"The data path {path} already exists and is not empty. Pass if_exists='prune' to remove it.")
+        elif if_exists == 'prune':
+            shutil.rmtree(path)
+            os.mkdir(path)
+        else:
+            raise AttributeError(f'if_exists must be one of "error", "prune"')
+    
+    # now the data folder exists - download the archive
+    print('Start downloading...', end='', flush=True)
+    
+    req = requests.get(url, stream=True)
+    zip = zipfile.ZipFile(io.BytesIO(req.content))
+
+    print(f'done.\nExtracting to {path}...', end='', flush=True)
+    zip.extractall(os.path.abspath(os.path.join(path, '..')))
+    print('done.', flush=True)

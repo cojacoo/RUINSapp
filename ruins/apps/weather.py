@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ruins.plotting import plt_map, kde, yrplot_hm
-from ruins import components
+from ruins.components import data_select, topic_select
 from ruins.core import build_config, DataManager, Config
 from ruins.core.cache import partial_memoize
 
@@ -140,27 +140,6 @@ def climate_indices(dataManager: DataManager, config: Config):
     return
 
 
-def data_select(dataManager: DataManager, config: Config, container=st) -> None:
-    """Create the user interface to control the data view
-    """
-    # get a station list
-    weather = dataManager['weather'].read()
-    station_list = list(weather.keys()) # TODO station names krummhoern, coast, inland, niedersachsen?
-    selected_station = container.selectbox('Select station/group (see map in sidebar for location):', station_list)
-
-    # select a temporal aggregation
-    aggregations = config.get('temporal_aggregations', ['Annual', 'Monthly'])
-    temp_agg = container.selectbox('Select temporal aggregation:', aggregations)
-
-    # include climate projections
-    include_climate = container.checkbox('Include climate projections (for coastal region)', value=False)
-
-    # add settings
-    st.session_state.selected_station = selected_station
-    st.session_state.temp_agg = temp_agg
-    st.session_state.include_climate = include_climate
-
-
 @partial_memoize(hash_names=['name', 'station', 'variable', 'time', '_filter'])
 def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, time: str, station: str = None, _filter: dict = None) -> pd.DataFrame:
     # get weather data
@@ -216,7 +195,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     # ----
 
     # TODO: this produces a slider but also needs some data caching
-    if config['temp_agg'] == 'Annual':
+    if config['temporal_agg'] == 'Annual':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1Y')
         allw = _reduce_weather_data(dataManager, name='weather', variable=vari, time='1Y')
 
@@ -268,7 +247,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # expl_md = read_markdown_file('explainer/stripes.md')
         # st.markdown(expl_md, unsafe_allow_html=True)
 
-    elif config['temp_agg'] == 'Monthly':
+    elif config['temporal_agg'] == 'Monthly':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1M')
 
         ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
@@ -327,21 +306,9 @@ def weather_explorer(config: Config, dataManager: DataManager):
     TODO: refactor this whole app into the main_app
     """
     # update session state with current data settings
-    data_select(dataManager, config, container=st)
+    data_expander = st.sidebar.expander('Data selection', expanded=True)
+    data_select.data_select(dataManager, config, expander_container=data_expander, container=st, story_mode=False)
 
-    # check config
-    if config['include_climate']:
-        fig = plt_map(dataManager, sel=config['selected_station'], cm='CORDEX')
-        st.sidebar.plotly_chart(fig)
-        st.sidebar.markdown(
-            '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>). The climate model grid is given in <span style="color:orange">orange</span> with the selected references as filled dots.''',
-            unsafe_allow_html=True)
-    else:
-        fig = plt_map(dataManager, sel=config['selected_station'])
-        st.sidebar.plotly_chart(fig)
-        st.sidebar.markdown(
-            '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>).''',
-            unsafe_allow_html=True)
 
     # switch the topic
     topic = config['current_topic']
@@ -374,7 +341,7 @@ def main_app(**kwargs):
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
     # topic selector
-    components.topic_selector(config=config, container=st.sidebar, config_expander=exp)
+    topic_select.topic_selector(config=config, container=st.sidebar, config_expander=exp)
     
     # TODO refactor this
     weather_explorer(config, dataManager)

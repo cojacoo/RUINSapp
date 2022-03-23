@@ -305,11 +305,6 @@ def weather_explorer(config: Config, dataManager: DataManager):
     """
     TODO: refactor this whole app into the main_app
     """
-    # update session state with current data settings
-    data_expander = st.sidebar.expander('Data selection', expanded=True)
-    data_select.data_select(dataManager, config, expander_container=data_expander, container=st, story_mode=False)
-
-
     # switch the topic
     topic = config['current_topic']
     if topic == 'Warming':
@@ -318,10 +313,6 @@ def weather_explorer(config: Config, dataManager: DataManager):
     elif topic == 'Weather Indices':
         climate_indices(dataManager, config)
 
-    if config['include_climate']:
-        st.markdown(
-            '''RCPs are scenarios about possible greenhouse gas concentrations by the year 2100. RCP2.6 is a world in which little further greenhouse gasses are emitted -- similar to the Paris climate agreement from 2015. RCP8.5 was intendent to explore a rather risky, more worst-case future with further increased emissions. RCP4.5 is one candidate of a more moderate greenhouse gas projection, which might be more likely to resemble a realistic situation. It is important to note that the very limited differentiation between RCP scenarios have been under debate for several years. One outcome is the definition of Shared Socioeconomic Pathways (SSPs) for which today, however, there are not very many model runs awailable. For more information, please check with the [Climatescenario Primer](https://climatescenarios.org/primer/), [CarbonBrief](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change) and this [NatureComment](https://www.nature.com/articles/d41586-020-00177-3)''',
-            unsafe_allow_html=True)
 
 
 def main_app(**kwargs):
@@ -333,15 +324,18 @@ def main_app(**kwargs):
 
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
 
-    # config expander
-    exp = st.sidebar.expander('Data select and config', expanded=False)
+    # Story mode - go through each setting
+    # update session state with current data settings
+    data_expander = st.sidebar.expander('Data selection', expanded=True)
+    data_select.data_select(dataManager, config, expander_container=data_expander, container=st)
 
     # build the app
     st.header('Weather Data Explorer')
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
     # topic selector
-    topic_select.topic_selector(config=config, container=st.sidebar, config_expander=exp)
+    # TODO - refactor this
+    topic_select.topic_selector(config=config, container=st.sidebar)
     
     # TODO refactor this
     weather_explorer(config, dataManager)

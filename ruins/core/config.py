@@ -108,6 +108,8 @@ class Config(Mapping):
     def get(self, key: str, default = None):
         if hasattr(self, key):
             return getattr(self, key)
+        elif hasattr(session_state, key):
+            return getattr(session_state, key)
         elif key in session_state:
             return session_state[key]
         else:

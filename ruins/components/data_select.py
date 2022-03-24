@@ -120,7 +120,13 @@ def compact_selector(dataManager: DataManager, config: Config, expander_containe
     # get a station list
     weather = dataManager['weather'].read()
     station_list = list(weather.keys()) # TODO station names krummhoern, coast, inland, niedersachsen?
-    selected_station = expander_container.selectbox('Select station/group:', station_list, index=station_list.index(config.get('selected_station') if config.has_key('selected_station') else 0))
+
+    # select a station
+    if config.has_key('selected_station'):
+        station_idx = station_list.index(config.get('selected_station'))
+    else:
+        station_idx = 0
+    selected_station = expander_container.selectbox('Select station/group:', station_list, index=station_idx)
 
     # select a temporal aggregation
     aggregations = config.get('temporal_aggregations', ['Annual', 'Monthly'])

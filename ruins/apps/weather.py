@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from ruins.plotting import plt_map, kde, yrplot_hm
 from ruins.components import data_select, topic_select
-from ruins.core import build_config, DataManager, Config
+from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
 
 
@@ -322,6 +322,11 @@ def main_app(**kwargs):
     url_params = st.experimental_get_query_params()
     config, dataManager = build_config(url_params=url_params, **kwargs)
 
+    # start debug view if debug is 'True'  TODO: url parameter always string, not bool?
+    debug = config.get('debug', False)
+    if debug == 'True': 
+        debug_view.debug_view(config, dataManager)
+    
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
 
     # Story mode - go through each setting

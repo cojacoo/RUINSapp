@@ -1,11 +1,11 @@
-from streamlit import session_state
-import streamlit as st
-
+from typing import Union
 import os
 from os.path import join as pjoin
 import json
 from collections.abc import Mapping
 
+from streamlit import session_state
+import streamlit as st
 
 # check if streamlit is running
 if not st._is_running_with_streamlit:
@@ -32,7 +32,7 @@ class Config(Mapping):
         # set the default values
 
         # debug mode
-        self.debug = False
+        self._debug = False
 
         # path 
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
@@ -70,6 +70,16 @@ class Config(Mapping):
         conf_args.update(kwargs)
         self._update(conf_args)
 
+    @property
+    def debug(self):
+        return self._debug
+    
+    @debug.setter
+    def debug(self, value: Union[str, bool]):
+        if isinstance(value, str):
+            self._debug = value.lower() != 'false'
+        else:
+            self._debug = bool(value)
 
     def from_json(self, path: str) -> dict:
         """loads the content of the JSON config file"""

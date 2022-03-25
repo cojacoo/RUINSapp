@@ -322,12 +322,9 @@ def main_app(**kwargs):
     url_params = st.experimental_get_query_params()
     config, dataManager = build_config(url_params=url_params, **kwargs)
 
-    # start debug view if debug is 'True'  TODO: url parameter always string, not bool?
-    debug = config.get('debug', False)
-    if debug == 'True': 
-        debug_view.debug_view(config, dataManager)
-    
+    # set page properties and debug view    
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
+    debug_view.debug_view(dataManager, config, debug_name='DEBUG - initial state')
 
     # Story mode - go through each setting
     # update session state with current data settings
@@ -344,6 +341,9 @@ def main_app(**kwargs):
     
     # TODO refactor this
     weather_explorer(config, dataManager)
+
+    # end state debug
+    debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')
 
 
 if __name__ == '__main__':

@@ -1,19 +1,20 @@
 import streamlit as st
+
 from ruins.core import Config, DataManager
 
-def debug_view(config: Config, dataManager: DataManager):
+
+def debug_view(dataManager: DataManager, config: Config, debug_name: str = None) -> None:
     '''
     Set Config['debug'] = 'True' to display debug view which
     shows current Config and dataManager parameters.
     '''
-    st.title('Debug view')
-    
-    left, right = st.columns(2)
+    if config.debug:
+        name = f'DEBUG [{debug_name}]' if debug_name else 'DEBUG'
+        exp = st.expander(name, expanded=True)
+        left, right = exp.columns(2)
 
-    left.write('Config paramters')
-    left.markdown(config.__dict__) # TODO: what to display exactly?
+        left.markdown('## Config paramters')
+        left.json(dict(config))
 
-    right.write('DataManager parameters')
-    right.markdown(dataManager) # TODO: what to display exactly?
-
-    st.stop()
+        right.markdown('## Session state')
+        right.json(st.session_state)

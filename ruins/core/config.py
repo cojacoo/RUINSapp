@@ -73,6 +73,10 @@ class Config(Mapping):
     @property
     def debug(self):
         return self._debug
+
+    @property
+    def story_mode(self):
+        return self._story_mode
     
     @debug.setter
     def debug(self, value: Union[str, bool]):
@@ -80,6 +84,13 @@ class Config(Mapping):
             self._debug = value.lower() != 'false'
         else:
             self._debug = bool(value)
+
+    @story_mode.setter
+    def story_mode(self, value: Union[str, bool]):
+        if isinstance(value, str):
+            self._story_mode = value.lower() != 'false'
+        else:
+            self._story_mode = bool(value)
 
     def from_json(self, path: str) -> dict:
         """loads the content of the JSON config file"""

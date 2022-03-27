@@ -330,14 +330,15 @@ def main_app(**kwargs):
     # update session state with current data settings
     data_expander = st.sidebar.expander('Data selection', expanded=True)
     data_select.data_select(dataManager, config, expander_container=data_expander, container=st)
-
+    
+    # topic selector
+    # TODO - refactor this
+    topic_expander = st.sidebar.expander('Topic selection', expanded=True) # here we would use control_policy ('show', 'hide) if we want to keep it
+    topic_select.topic_selector(config=config, expander_container=topic_expander, container=st)
+    
     # build the app
     st.header('Weather Data Explorer')
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
-
-    # topic selector
-    # TODO - refactor this
-    topic_select.topic_selector(config=config, container=st.sidebar)
     
     # TODO refactor this
     weather_explorer(config, dataManager)

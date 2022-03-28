@@ -8,6 +8,7 @@ import streamlit as st
 from PIL import Image
 
 from ruins.core import Config
+from ruins.core.debug_view import debug_view
 
 
 def full_topic_selector(config: Config, expander_container = st.sidebar, **kwargs):
@@ -40,13 +41,16 @@ def full_topic_selector(config: Config, expander_container = st.sidebar, **kwarg
     row_container.markdown('''___''')
     
     if warming:
-        st.session_state.current_topic = 'Warming'    
+        st.session_state.current_topic = 'Warming'  
+        st.experimental_rerun()  
     elif weather_indices:
         st.session_state.current_topic = 'Weather Indices'
+        st.experimental_rerun()
     else:
-        st.stop()
 
-    st.experimental_rerun()
+        # dev only
+        debug_view(dataManager=None, config=config)
+        st.stop()
 
 
 def compact_topic_selector(config: Config, expander_container = st.sidebar):
@@ -59,37 +63,7 @@ def compact_topic_selector(config: Config, expander_container = st.sidebar):
         topic_idx = topic_list.index(config.get('current_topic'))
     else:
         topic_idx = 0
-    current_topic = expander_container.selectbox('Select topic:', topic_list, index=topic_idx)
-
-
-    # TODO: do we need get_control_policy? not used in data_select
-    ## get the policy
-    #policy = config.get_control_policy('topic_selector')
-#
-    ## create the control
-    #if current_topic is not None:
-    #    topic = expander_container.selectbox('Select a topic', topic_list)
-    #
-    #elif policy == 'show': # pragma: no cover
-    #    topic = container.selectbox(
-    #        'Select a topic',
-    #        topic_list,
-    #        #index=topic_list.index(config['current_topic'])
-    #    )
-    #
-    #elif policy == 'hide': # pragma: no cover
-    #    topic = config_expander.selectbox(
-    #        'Select a topic',
-    #        topic_list,
-    #        #index=topic_list.index(config['current_topic'])
-    #    )
-    #
-    #else:
-    #    topic = current_topic
-
-    # set the new topic
-    #if current_topic != topic:
-    st.session_state.current_topic = current_topic
+    expander_container.selectbox('Select topic:', topic_list, key='current_topic', index=topic_idx)
 
 
 def topic_selector(config: Config, expander_container=st.sidebar, **kwargs) -> str:
@@ -110,4 +84,3 @@ def topic_selector(config: Config, expander_container=st.sidebar, **kwargs) -> s
         full_topic_selector(config=config, expander_container=expander_container)
     else:
         compact_topic_selector(config=config, expander_container=expander_container)
-

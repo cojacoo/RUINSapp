@@ -58,7 +58,7 @@ class Config(Mapping):
         self.layout = 'centered'
 
         # app content
-        self.topic_list = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+        self.topic_list = ['Warming', 'Weather Indices']#, 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
 
         # store the keys
         self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']

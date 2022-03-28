@@ -126,7 +126,8 @@ def compact_selector(dataManager: DataManager, config: Config, expander_containe
         station_idx = station_list.index(config.get('selected_station'))
     else:
         station_idx = 0
-    selected_station = expander_container.selectbox('Select station/group:', station_list, index=station_idx)
+    # selected_station = expander_container.selectbox('Select station/group:', station_list, index=station_idx)
+    expander_container.selectbox('Select station/group:', station_list, key='selected_station', index=station_idx)
 
     # select a temporal aggregation
     aggregations = config.get('temporal_aggregations', ['Annual', 'Monthly'])
@@ -134,15 +135,17 @@ def compact_selector(dataManager: DataManager, config: Config, expander_containe
         agg_idx = aggregations.index(config['temporal_agg'])
     else:
         agg_idx = 0
-    temp_agg = expander_container.selectbox('Select temporal aggregation:', aggregations, index=agg_idx)
+    # temp_agg = expander_container.selectbox('Select temporal aggregation:', aggregations, index=agg_idx)
+    expander_container.selectbox('Select temporal aggregation:', aggregations, key='temporal_agg', index=agg_idx)
 
     # include climate projections
-    include_climate = expander_container.checkbox('Include climate projections (for coastal region)?', value=config['include_climate'] if config.has_key('include_climate') else False)
+    #include_climate = expander_container.checkbox('Include climate projections (for coastal region)?', value=config['include_climate'] if config.has_key('include_climate') else False)
+    expander_container.checkbox('Include climate projections (for coastal region)?', key='include_climate')
 
     # add settings
-    st.session_state.selected_station = selected_station
-    st.session_state.temporal_agg = temp_agg
-    st.session_state.include_climate = include_climate
+    #st.session_state.selected_station = selected_station
+    #st.session_state.temporal_agg = temp_agg
+    #st.session_state.include_climate = include_climate
 
     # session is set, add the map
     _map_wrapper(dataManager=dataManager, config=config, expander_container=map_placeholder)

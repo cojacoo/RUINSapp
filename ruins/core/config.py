@@ -137,6 +137,8 @@ class Config(Mapping):
             return default
     
     def has_key(self, key) -> bool:
+        if hasattr(self, key) and not key in session_state:
+            session_state[key] = getattr(self, key)
         return hasattr(self, key) or hasattr(session_state, key) or key in session_state
     
     def __len__(self) -> int:

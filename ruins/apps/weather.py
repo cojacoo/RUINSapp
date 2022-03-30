@@ -332,16 +332,25 @@ def main_app(**kwargs):
     data_select.data_select(dataManager, config, expander_container=data_expander, container=st)
     
     # topic selector
-    # TODO - refactor this
     topic_expander = st.sidebar.expander('Topic selection', expanded=True) # here we would use control_policy ('show', 'hide) if we want to keep it
-    topic_select.topic_selector(config=config, expander_container=topic_expander, container=st)
+    topic_select.topic_select(config=config, expander_container=topic_expander, container=st)
     
     # build the app
     st.header('Weather Data Explorer')
+    # TODO: move this text also into story mode?
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
+
+    # topic is set, now run the correct plot
+    topic = config['current_topic']
+
+    if topic == 'Warming':
+        warming_data_plotter(dataManager, config)
     
-    # TODO refactor this
-    weather_explorer(config, dataManager)
+    elif topic == 'Weather Indices':
+        climate_indices(dataManager, config)
+
+    else:
+        st.error(f'{topic} is not a valid topic here. Please tell the developer.')
 
     # end state debug
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')

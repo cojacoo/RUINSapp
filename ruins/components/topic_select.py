@@ -11,7 +11,7 @@ from ruins.core import Config
 from ruins.core.debug_view import debug_view
 
 
-def full_topic_selector(config: Config, expander_container = st.sidebar, **kwargs):
+def current_topic_selector(config: Config, expander_container = st.sidebar, **kwargs):
     """
     Select a topic from a list of topics with a short description and a 
     symbolic image.
@@ -19,6 +19,17 @@ def full_topic_selector(config: Config, expander_container = st.sidebar, **kwarg
     container = st if 'container' not in kwargs else kwargs['container']
     container.title("Select a topic you would like to explore")
 
+    if 'topic_list' in kwargs:
+        topic_list = kwargs['topic_list']
+    else:
+        topic_list = config['topic_list']
+
+    # check if the topic was set
+    if config.has_key('current_topic'):
+        expander_container.selectbox('Select topic:', topic_list, key='current_topic')
+        return
+
+    # From here on full topic select
     # introduction
     container.markdown("""Inside the RUINS App you can explore different topics. Please select one, you can select another topic later in the sidebar.""")
 
@@ -50,29 +61,13 @@ def full_topic_selector(config: Config, expander_container = st.sidebar, **kwarg
         st.session_state.current_topic = 'Weather Indices'
         st.experimental_rerun()
     else:
-
         # dev only
         debug_view(dataManager=None, config=config)
         st.stop()
 
 
-def compact_topic_selector(config: Config, expander_container = st.sidebar):
-    """
-    Select topic in a selectbox in the sidebar which can be hidden 
-    inside an expander.
-    """    
-    # get topic list
-    topic_list = config['topic_list']
 
-    # select a topic
-    if config.has_key('current_topic'):
-        topic_idx = topic_list.index(config.get('current_topic'))
-    else:
-        topic_idx = 0
-    expander_container.selectbox('Select topic:', topic_list, key='current_topic', index=topic_idx)
-
-
-def topic_selector(config: Config, expander_container=st.sidebar, **kwargs) -> str:
+def topic_select(config: Config, expander_container=st.sidebar, **kwargs) -> str:
     """
     Through this function a topic is selected.
     If we are either not in story_mode or if a topic is already selected, 
@@ -89,10 +84,21 @@ def topic_selector(config: Config, expander_container=st.sidebar, **kwargs) -> s
 
     # switch the story_mode
     if not story_mode:
-        return compact_topic_selector(config=config, expander_container=expander_container)
+        st.session_state.current_topic = 'Warming'
     
-    # we are in story mode
-    if not config.has_key('current_topic'):
-        full_topic_selector(config=config, expander_container=expander_container)
-    else:
-        compact_topic_selector(config=config, expander_container=expander_container)
+    # select topic
+    current_topic_selector(config=config, expander_container=expander_container, **kwargs)
+
+    
+def debug_main(**kwargs):
+    from ruins.core import build_config
+    params = st.experimental_get_query_params()
+    config, _ = build_config(omit_dataManager=True, url_params=params, **kwargs)
+
+    topic_select(config=config)
+
+    st.json(st.session_state)
+
+if __name__ == '__main__':
+    import fire
+    fire.Fire(debug_main)

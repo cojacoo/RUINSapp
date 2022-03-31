@@ -175,12 +175,17 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     statios = list(weather.keys())
     stat1 = config['selected_station']
 
+    # build the placeholders
+    plot_area = st.empty()
+    control_left, control_right = st.columns((1, 3))
+
     # TODO refactor in data-aggregator and data-plotter for different time frames
+
 
     # ----
     # data-aggregator controls
     navi_vars = ['Maximum Air Temperature', 'Mean Air Temperature', 'Minimum Air Temperature']
-    navi_var = st.sidebar.radio("Select variable:", options=navi_vars)
+    navi_var = control_left.radio("Select variable:", options=navi_vars)
     if navi_var[:4] == 'Mini':
         vari = 'Tmin'
         ag = 'min'
@@ -203,10 +208,8 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
         
         if config['include_climate']:
-            rcps = ['rcp26', 'rcp45', 'rcp85']
-            rcp = st.selectbox(
-                'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
-                rcps)
+            # get the rcp
+            rcp = config['current_rcp']
 
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1Y', _filter=dict(RCP=rcp))
             data_ub = applySDM(wdata, data, meth='abs')
@@ -217,7 +220,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             dataUq = float(np.ceil(allw.max().quantile(0.76)))
             datamax = float(np.max([dataUq,np.round(allw.max().max(), 1)]))
 
-        datarng = st.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
+        datarng = control_right.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
 
         # -------------------
         # start plotting plot
@@ -229,7 +232,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         ax.set_title(stat1 + ' Annual ' + navi_var)
         ax.set_xlabel('T (°C)')
         ax.set_xlim(datarng[0],datarng[1])
-        st.pyplot(fig)
+        plot_area.pyplot(fig)
 
         sndstat = st.checkbox('Show second station for comparison')
 
@@ -250,12 +253,11 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     elif config['temporal_agg'] == 'Monthly':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1M')
 
-        ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
+        ref_yr = control_right.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
 
         if config['include_climate']:
-            rcps = ['rcp26', 'rcp45', 'rcp85']
-            rcp = st.selectbox('RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):', rcps)
-
+            # get the rcp
+            rcp = config['current_rcp']
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1M', _filter=dict(RCP=rcp))
 
             #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
@@ -268,14 +270,14 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                 fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
 
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot(fig)
+            plot_area.pyplot(fig)
 
 
         # TODO: break up this as well
         else:
             fig = yrplot_hm(wdata,ref_yr,ag)
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot(fig)
+            plot_area.pyplot(fig)
 
             sndstat = st.checkbox('Compare to a second station?')
 

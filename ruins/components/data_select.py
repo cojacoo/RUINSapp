@@ -7,12 +7,11 @@ Alex will das dokumentieren....
 """
 from distutils.command.build import build
 import streamlit as st
-import time
 
 from ruins.core import DataManager, Config
 from ruins.plotting import plt_map
 
-__dimensions__ = ['selected_station', 'temporal_agg', 'include_climate']
+
 
 
 def _map_wrapper(dataManager: DataManager, config: Config, expander_container = st.sidebar, add_caption: bool = True):
@@ -96,19 +95,27 @@ def temporal_agg_selector(dataManager: DataManager, config: Config, expander_con
     else:
         st.stop()
     
-    #time.sleep(0.1)
     st.experimental_rerun()
 
-    
 
-
-def include_climate_selector(dataManager: DataManager, config: Config, expander_container = st.sidebar, **kwargs):
+def rcp_selector(dataManager: DataManager, config: Config, expander_container = st.sidebar, **kwargs):
     """
-    Decide whether to include or exclude climate projects.
+    Decide whether to include or exclude climate projects. 
+    If climate projections should be included, the user can select one of the projections.
     """
+    # get the container
     container = st if 'container' not in kwargs else kwargs['container']
+
+    # get all available climate projections
+    projections = list(set([_.split('.')[-1] for _ in dataManager['cordex_coast'].read().keys()]))
+
+    # check mode
     if config.has_key('include_climate'):
         expander_container.checkbox('Include climate projections (for coastal region)?', key='include_climate')
+
+        # add the selectbox
+        if config['include_climate']:
+            expander_container.selectbox('Select RCP:', projections, key='current_rcp', format_func=lambda x: x.upper())
         return
     
     container.title('Include Climate projections?')
@@ -118,22 +125,35 @@ def include_climate_selector(dataManager: DataManager, config: Config, expander_
         unsafe_allow_html=True)
 
     container.info("RPCs are cool, but make stuff a bit slower")
-    container.markdown("### Activate climate projections?")
-    left, right = container.columns(2)
-    yes = left.button("Yes, use RPCs")
-    no = right.button("No, I\'m fine")
+    container.markdown("### Activate climate projections?\nYou can select one of the scenarios below, or select 'No' to skip this step.")
+    no = container.button('Continue without climate projections')
 
-    if yes:
-        st.session_state.include_climate = True
-    elif no:
+    # handle the no
+    if no:
         st.session_state.include_climate = False
-    else:
-        st.stop()
+        st.experimental_rerun()
     
-    #time.sleep(0.1)
-    st.experimental_rerun()
-
-
+    # build the columns
+    cols = container.columns(len(projections))
+    url = config['rcp_video_url']
+    use_rcp = []
+    for col, rcp in zip(cols, projections):
+        # video
+        col.video(url.format(rcp=rcp[-2:]))
+        col.markdown(f"### {rcp.upper()}")
+        col.markdown(f'video linked form https://sos.noaa.gov/catalog/datasets/climate-model-temperature-change-rcp-{rcp[-2:]}-2006-2100/')
+        use = col.button(f'Use {rcp.upper()}')
+        use_rcp.append((use, rcp))
+    
+    # check if any button was used:
+    for use, rcp in use_rcp:
+        if use:
+            st.session_state.include_climate = True
+            st.session_state.current_rcp = rcp
+            st.experimental_rerun()
+    
+    # if we didn't restart, stop the application
+    st.stop()
 
 
 def data_select(dataManager: DataManager, config: Config, expander_container = st.sidebar, **kwargs):
@@ -161,7 +181,7 @@ def data_select(dataManager: DataManager, config: Config, expander_container = s
     # we are in story mode! hurray!
     selected_station_selector(dataManager=dataManager, config=config, expander_container=expander_container, station_list=station_list)
     temporal_agg_selector(dataManager=dataManager, config=config, expander_container=expander_container)
-    include_climate_selector(dataManager=dataManager, config=config, expander_container=expander_container)
+    rcp_selector(dataManager=dataManager, config=config, expander_container=expander_container)
 
 
 def debug_main(**kwargs):

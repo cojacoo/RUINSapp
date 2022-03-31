@@ -17,7 +17,6 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
     symbolic image.
     """
     container = st if 'container' not in kwargs else kwargs['container']
-    container.title("Select a topic you would like to explore")
 
     if 'topic_list' in kwargs:
         topic_list = kwargs['topic_list']
@@ -31,6 +30,7 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
 
     # From here on full topic select
     # introduction
+    container.title("Select a topic you would like to explore")
     container.markdown("""Inside the RUINS App you can explore different topics. Please select one, you can select another topic later in the sidebar.""")
 
     # use a new container for each row

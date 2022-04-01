@@ -1,11 +1,11 @@
-from streamlit import session_state
-import streamlit as st
-
+from typing import Union
 import os
 from os.path import join as pjoin
 import json
 from collections.abc import Mapping
 
+from streamlit import session_state
+import streamlit as st
 
 # check if streamlit is running
 if not st._is_running_with_streamlit:
@@ -32,7 +32,7 @@ class Config(Mapping):
         # set the default values
 
         # debug mode
-        self.debug = False
+        self._debug = False
 
         # path 
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
@@ -58,10 +58,11 @@ class Config(Mapping):
         self.layout = 'centered'
 
         # app content
-        self.topic_list = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+        self.topic_list = ['Warming', 'Weather Indices']#, 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
+        self.rcp_video_url = 'https://sos.noaa.gov/videos/rcp_ga_{rcp}_400.mp4'
 
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']
+        self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list', 'rcp_video_url']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
@@ -70,6 +71,27 @@ class Config(Mapping):
         conf_args.update(kwargs)
         self._update(conf_args)
 
+    @property
+    def debug(self):
+        return self._debug
+
+    @property
+    def story_mode(self):
+        return self._story_mode
+    
+    @debug.setter
+    def debug(self, value: Union[str, bool]):
+        if isinstance(value, str):
+            self._debug = value.lower() != 'false'
+        else:
+            self._debug = bool(value)
+
+    @story_mode.setter
+    def story_mode(self, value: Union[str, bool]):
+        if isinstance(value, str):
+            self._story_mode = value.lower() != 'false'
+        else:
+            self._story_mode = bool(value)
 
     def from_json(self, path: str) -> dict:
         """loads the content of the JSON config file"""
@@ -108,12 +130,16 @@ class Config(Mapping):
     def get(self, key: str, default = None):
         if hasattr(self, key):
             return getattr(self, key)
+        elif hasattr(session_state, key):
+            return getattr(session_state, key)
         elif key in session_state:
             return session_state[key]
         else:
             return default
     
     def has_key(self, key) -> bool:
+        if hasattr(self, key) and not key in session_state:
+            session_state[key] = getattr(self, key)
         return hasattr(self, key) or hasattr(session_state, key) or key in session_state
     
     def __len__(self) -> int:

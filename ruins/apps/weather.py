@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ruins.plotting import plt_map, kde, yrplot_hm
-from ruins import components
-from ruins.core import build_config, DataManager, Config
+from ruins.components import data_select, topic_select
+from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
 
 
@@ -140,27 +140,6 @@ def climate_indices(dataManager: DataManager, config: Config):
     return
 
 
-def data_select(dataManager: DataManager, config: Config, container=st) -> None:
-    """Create the user interface to control the data view
-    """
-    # get a station list
-    weather = dataManager['weather'].read()
-    station_list = list(weather.keys()) # TODO station names krummhoern, coast, inland, niedersachsen?
-    selected_station = container.selectbox('Select station/group (see map in sidebar for location):', station_list)
-
-    # select a temporal aggregation
-    aggregations = config.get('temporal_aggregations', ['Annual', 'Monthly'])
-    temp_agg = container.selectbox('Select temporal aggregation:', aggregations)
-
-    # include climate projections
-    include_climate = container.checkbox('Include climate projections (for coastal region)', value=False)
-
-    # add settings
-    st.session_state.selected_station = selected_station
-    st.session_state.temp_agg = temp_agg
-    st.session_state.include_climate = include_climate
-
-
 @partial_memoize(hash_names=['name', 'station', 'variable', 'time', '_filter'])
 def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, time: str, station: str = None, _filter: dict = None) -> pd.DataFrame:
     # get weather data
@@ -196,12 +175,17 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     statios = list(weather.keys())
     stat1 = config['selected_station']
 
+    # build the placeholders
+    plot_area = st.empty()
+    control_left, control_right = st.columns((1, 3))
+
     # TODO refactor in data-aggregator and data-plotter for different time frames
+
 
     # ----
     # data-aggregator controls
     navi_vars = ['Maximum Air Temperature', 'Mean Air Temperature', 'Minimum Air Temperature']
-    navi_var = st.sidebar.radio("Select variable:", options=navi_vars)
+    navi_var = control_left.radio("Select variable:", options=navi_vars)
     if navi_var[:4] == 'Mini':
         vari = 'Tmin'
         ag = 'min'
@@ -216,7 +200,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     # ----
 
     # TODO: this produces a slider but also needs some data caching
-    if config['temp_agg'] == 'Annual':
+    if config['temporal_agg'] == 'Annual':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1Y')
         allw = _reduce_weather_data(dataManager, name='weather', variable=vari, time='1Y')
 
@@ -224,10 +208,8 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         datamin = float(np.min([dataLq, np.round(allw.min().min(), 1)]))
         
         if config['include_climate']:
-            rcps = ['rcp26', 'rcp45', 'rcp85']
-            rcp = st.selectbox(
-                'RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):',
-                rcps)
+            # get the rcp
+            rcp = config['current_rcp']
 
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1Y', _filter=dict(RCP=rcp))
             data_ub = applySDM(wdata, data, meth='abs')
@@ -238,7 +220,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             dataUq = float(np.ceil(allw.max().quantile(0.76)))
             datamax = float(np.max([dataUq,np.round(allw.max().max(), 1)]))
 
-        datarng = st.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
+        datarng = control_right.slider('Adjust data range on x-axis of plot:', min_value=datamin, max_value=datamax, value=(dataLq, dataUq), step=0.1, key='drangew')
 
         # -------------------
         # start plotting plot
@@ -250,7 +232,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         ax.set_title(stat1 + ' Annual ' + navi_var)
         ax.set_xlabel('T (°C)')
         ax.set_xlim(datarng[0],datarng[1])
-        st.pyplot(fig)
+        plot_area.pyplot(fig)
 
         sndstat = st.checkbox('Show second station for comparison')
 
@@ -268,15 +250,14 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # expl_md = read_markdown_file('explainer/stripes.md')
         # st.markdown(expl_md, unsafe_allow_html=True)
 
-    elif config['temp_agg'] == 'Monthly':
+    elif config['temporal_agg'] == 'Monthly':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1M')
 
-        ref_yr = st.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
+        ref_yr = control_right.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
 
         if config['include_climate']:
-            rcps = ['rcp26', 'rcp45', 'rcp85']
-            rcp = st.selectbox('RCP (Mean over all projections will be shown. For more details go to section "Climate Projections"):', rcps)
-
+            # get the rcp
+            rcp = config['current_rcp']
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1M', _filter=dict(RCP=rcp))
 
             #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
@@ -289,14 +270,14 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                 fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
 
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot(fig)
+            plot_area.pyplot(fig)
 
 
         # TODO: break up this as well
         else:
             fig = yrplot_hm(wdata,ref_yr,ag)
             plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            st.pyplot(fig)
+            plot_area.pyplot(fig)
 
             sndstat = st.checkbox('Compare to a second station?')
 
@@ -326,23 +307,6 @@ def weather_explorer(config: Config, dataManager: DataManager):
     """
     TODO: refactor this whole app into the main_app
     """
-    # update session state with current data settings
-    data_select(dataManager, config, container=st)
-
-    # check config
-    if config['include_climate']:
-        fig = plt_map(dataManager, sel=config['selected_station'], cm='CORDEX')
-        st.sidebar.plotly_chart(fig)
-        st.sidebar.markdown(
-            '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>). The climate model grid is given in <span style="color:orange">orange</span> with the selected references as filled dots.''',
-            unsafe_allow_html=True)
-    else:
-        fig = plt_map(dataManager, sel=config['selected_station'])
-        st.sidebar.plotly_chart(fig)
-        st.sidebar.markdown(
-            '''Map with available stations (<span style="color:blue">blue dots</span>) and selected reference station (<span style="color:magenta">magenta highlight</span>).''',
-            unsafe_allow_html=True)
-
     # switch the topic
     topic = config['current_topic']
     if topic == 'Warming':
@@ -351,10 +315,6 @@ def weather_explorer(config: Config, dataManager: DataManager):
     elif topic == 'Weather Indices':
         climate_indices(dataManager, config)
 
-    if config['include_climate']:
-        st.markdown(
-            '''RCPs are scenarios about possible greenhouse gas concentrations by the year 2100. RCP2.6 is a world in which little further greenhouse gasses are emitted -- similar to the Paris climate agreement from 2015. RCP8.5 was intendent to explore a rather risky, more worst-case future with further increased emissions. RCP4.5 is one candidate of a more moderate greenhouse gas projection, which might be more likely to resemble a realistic situation. It is important to note that the very limited differentiation between RCP scenarios have been under debate for several years. One outcome is the definition of Shared Socioeconomic Pathways (SSPs) for which today, however, there are not very many model runs awailable. For more information, please check with the [Climatescenario Primer](https://climatescenarios.org/primer/), [CarbonBrief](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change) and this [NatureComment](https://www.nature.com/articles/d41586-020-00177-3)''',
-            unsafe_allow_html=True)
 
 
 def main_app(**kwargs):
@@ -364,20 +324,38 @@ def main_app(**kwargs):
     url_params = st.experimental_get_query_params()
     config, dataManager = build_config(url_params=url_params, **kwargs)
 
+    # set page properties and debug view    
     st.set_page_config(page_title='Weather Explorer', layout=config.layout)
+    debug_view.debug_view(dataManager, config, debug_name='DEBUG - initial state')
 
-    # config expander
-    exp = st.sidebar.expander('Data select and config', expanded=False)
-
+    # Story mode - go through each setting
+    # update session state with current data settings
+    data_expander = st.sidebar.expander('Data selection', expanded=True)
+    data_select.data_select(dataManager, config, expander_container=data_expander, container=st)
+    
+    # topic selector
+    topic_expander = st.sidebar.expander('Topic selection', expanded=True) # here we would use control_policy ('show', 'hide) if we want to keep it
+    topic_select.topic_select(config=config, expander_container=topic_expander, container=st)
+    
     # build the app
     st.header('Weather Data Explorer')
+    # TODO: move this text also into story mode?
     st.markdown('''In this section we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.''',unsafe_allow_html=True)
 
-    # topic selector
-    components.topic_selector(config=config, container=st.sidebar, config_expander=exp)
+    # topic is set, now run the correct plot
+    topic = config['current_topic']
+
+    if topic == 'Warming':
+        warming_data_plotter(dataManager, config)
     
-    # TODO refactor this
-    weather_explorer(config, dataManager)
+    elif topic == 'Weather Indices':
+        climate_indices(dataManager, config)
+
+    else:
+        st.error(f'{topic} is not a valid topic here. Please tell the developer.')
+
+    # end state debug
+    debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')
 
 
 if __name__ == '__main__':

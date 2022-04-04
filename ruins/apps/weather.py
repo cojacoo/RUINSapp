@@ -176,7 +176,7 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
     stat1 = config['selected_station']
 
     # build the placeholders
-    plot_area = st.empty()
+    plot_area = st.container()
     control_left, control_right = st.columns((1, 3))
 
     # TODO refactor in data-aggregator and data-plotter for different time frames

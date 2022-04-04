@@ -141,7 +141,8 @@ def _yrplot_plotly(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperat
     # update the layout
     fig.update_layout(
         template='plotly_white',
-        height=len(dummy) * 15,
+        height=min(len(dummy) * 15, 650),
+        margin=dict(t=5, b=100, l=80, r=80, autoexpand=False),
         xaxis=dict(tickangle=45, title='Monat' if lang == 'de' else 'Month'),
         yaxis=dict(title='Jahr' if lang == 'de' else 'Year'),
     )

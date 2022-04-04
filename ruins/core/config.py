@@ -1,8 +1,10 @@
-from typing import Union
+from typing import Callable, Dict, Union
 import os
 from os.path import join as pjoin
 import json
 from collections.abc import Mapping
+
+from ruins.core.i18n import get_translator
 
 from streamlit import session_state
 import streamlit as st
@@ -33,6 +35,7 @@ class Config(Mapping):
 
         # debug mode
         self._debug = False
+        self.lang = 'en'
 
         # path 
         self.basepath = os.path.abspath(pjoin(os.path.dirname(__file__), '..', '..'))
@@ -62,7 +65,7 @@ class Config(Mapping):
         self.rcp_video_url = 'https://sos.noaa.gov/videos/rcp_ga_{rcp}_400.mp4'
 
         # store the keys
-        self._keys = ['debug', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list', 'rcp_video_url']
+        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list', 'rcp_video_url']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
@@ -126,6 +129,9 @@ class Config(Mapping):
             # TODO: discuss with conrad to change this
             return 'show'
 
+    def translator(self, **translations: Dict[str, str]) -> Callable[[str], str]:
+        """Return a translator function"""
+        return get_translator(self.lang, **translations)
     
     def get(self, key: str, default = None):
         if hasattr(self, key):

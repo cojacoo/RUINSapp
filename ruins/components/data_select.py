@@ -18,6 +18,7 @@ _TRANSLATE_EN = dict(
     welcome='Welcome to Weather Explorer',
     rcp_title='Include Climate Projections?',
     rcp_description="""RCPs are scenarios about possible greenhouse gas concentrations by the year 2100. RCP2.6 is a world in which little further greenhouse gasses are emitted -- similar to the Paris climate agreement from 2015. RCP8.5 was intendent to explore a rather risky, more worst-case future with further increased emissions. RCP4.5 is one candidate of a more moderate greenhouse gas projection, which might be more likely to resemble a realistic situation. It is important to note that the very limited differentiation between RCP scenarios have been under debate for several years. One outcome is the definition of Shared Socioeconomic Pathways (SSPs) for which today, however, there are not very many model runs awailable. For more information, please check with the [Climatescenario Primer](https://climatescenarios.org/primer/), [CarbonBrief](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change) and this [NatureComment](https://www.nature.com/articles/d41586-020-00177-3)""",
+    rcp_infotext="### Activate climate projections?\nYou can select one of the scenarios below, or select 'No' to skip this step, then no climate projections will be included. Each projection has a linked video from https://sos.noaa.gov/ to illustrate the changes due to the scenario."
 )
 _TRANSLATE_DE = dict(
     map_caption_long='''Karte mit verfügbaren Stationen (<span style="color:blue">blauen Punkte</span>) und ausgewählte Referenzstation (<span style="color:magenta">magenta hervorgehoben</span>). Das Modellgrid ist in <span style="color:orange">orange</span> mit den ausgewählten Referenzen als gefüllte Punkte dargestellt.''',
@@ -25,6 +26,7 @@ _TRANSLATE_DE = dict(
     welcome='Willkommen bei Weather Explorer',
     rcp_title='Klimaprojektionen hinzufügen?',
     rcp_description="""RCPs sind mögliche Szenarios der Treibhausgaskonentrationen in der Atmosphäre bis zum Jahr 2100. RCP2.6 orientiert sich am Pariser Klimaabkommen von 2015, demnach kaum mehr Treibhasugase ausgestoßen werden. RCP8.5 beschreibt einen eher risikofreudigen Umgang, bei dem Konzentrationen ähnlich einem Worst-Case Szenario weiter ansteigen. RCP4.5 is ein moderates Modell, das eher an der Realität orientiert ist.. Es ist wichtig zu beachten, dass die schwierige Differenzierbarkeit zwischen RCP Szenarios seit langem diskutiert wird. Ein Ausgang ist die Definition von Shared Socioeconomic Pathways (SSPs), für die heute jedoch nur wenige Modell-Runs verfügbar sind. Für weitere Informationen, siehe [Climatescenario Primer](https://climatescenarios.org/primer/), [CarbonBrief](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change) oder dieser [Nature Comment](https://www.nature.com/articles/d41586-020-00177-3) kontaktieren.''',"""
+    rcp_inftext = "### Klimaprojektionen hinzufügen?\nSie können eines der Szenarios unten auswählen, oder 'Keine' auswählen, um diesen Schritt zu überspringen. Jedes Szenario hat ein verlinktes Video von https://sos.noaa.gov/ zur Darstellung der Änderungen durch das Szenario."
 )
 
 
@@ -103,8 +105,8 @@ def temporal_agg_selector(dataManager: DataManager, config: Config, expander_con
     left.info("I am a yearly aggregated preview")
     right.info("I am a monthly aggregated preview")
 
-    use_annual = left.button('Aggregate Annualy')
-    use_monthly = right.button('Aggregate Monthly')
+    use_annual = left.button('Jährliche Aggregierung' if config.lang == 'de' else 'Aggregate Annualy')
+    use_monthly = right.button('Monatliche Aggregierung' if config.lang == 'de' else 'Aggregate Monthly')
 
     if use_annual:
         st.session_state.temporal_agg = "Annual"
@@ -145,8 +147,8 @@ def rcp_selector(dataManager: DataManager, config: Config, expander_container = 
     container.markdown(t('rcp_description'), unsafe_allow_html=True)
 
     container.info("RPCs are cool, but make stuff a bit slower")
-    container.markdown("### Activate climate projections?\nYou can select one of the scenarios below, or select 'No' to skip this step.")
-    no = container.button('Continue without climate projections')
+    container.markdown(t('rcp_infotext'))
+    no = container.button('Ohne Klimaprojektionen fortfahren' if config.lang == 'de' else 'Continue without climate projections')
 
     # handle the no
     if no:
@@ -161,7 +163,7 @@ def rcp_selector(dataManager: DataManager, config: Config, expander_container = 
         # video
         col.video(url.format(rcp=rcp[-2:]))
         col.markdown(f"### {rcp.upper()}")
-        col.markdown(f'video linked from https://sos.noaa.gov/catalog/datasets/climate-model-temperature-change-rcp-{rcp[-2:]}-2006-2100/')
+        col.markdown(f'Video Source: [NOAA Science On a Sphere](https://sos.noaa.gov/catalog/datasets/climate-model-temperature-change-rcp-{rcp[-2:]}-2006-2100/)')
         use = col.button(f'Use {rcp.upper()}')
         use_rcp.append((use, rcp))
     

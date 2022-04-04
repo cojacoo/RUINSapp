@@ -36,3 +36,13 @@ Then request and install certificates for nginx
 certbot --nginx
 ```
 
+
+
+bla bla bla, 
+
+aaaand finally:
+
+```bash
+docker run -d -i  -p 42001:8501  --name weather  --restart always  ghcr.io/hydrocode-de/ruins:v0.6.0 weather.py
+```
+

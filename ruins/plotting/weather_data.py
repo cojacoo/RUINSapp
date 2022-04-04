@@ -5,6 +5,10 @@ import seaborn as sns
 
 
 def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature anomaly (K)', cmx='coolwarm', cmxeq=True, li=False):
+    """
+    @deprecated - use stripes_heatmap.yrplot_hm instead
+    
+    """
     # plot of heatmap with monthyl and annual stripes
     yrs = sr.index.year.unique()
     dummy = np.zeros((len(yrs), 14)) * np.nan

@@ -265,19 +265,25 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
 
             if ub:
                 data_ub = applySDM(wdata, data, meth='abs')
-                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]),ref_yr, ag, li=2006)
+                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
             else:
-                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006)
+                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
 
-            plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            plot_area.pyplot(fig)
+            # old matplotlib include
+            #plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
+            #plot_area.pyplot(fig)
+            fig.update_layout(title = f"{stat1} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
+            plot_area.plotly_chart(fig, use_container_width=True)
 
 
         # TODO: break up this as well
         else:
-            fig = yrplot_hm(wdata,ref_yr,ag)
-            plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            plot_area.pyplot(fig)
+            fig = yrplot_hm(sr=wdata, ref=ref_yr, ag=ag, lang=config.lang)
+            plot_area.plotly_chart(fig, use_container_width=True)
+
+            # old matplotlib include
+            #plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
+            #plot_area.pyplot(fig)
 
             sndstat = st.checkbox('Compare to a second station?')
 
@@ -294,9 +300,13 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
                     if ref_yr2[1] - ref_yr2[0] < 10:
                         ref_yr2[1] = ref_yr2[0] + 10
 
-                fig = yrplot_hm(data2, ref_yr2, ag)
-                plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
-                st.pyplot(fig)
+                fig = yrplot_hm(sr=data2, ref=ref_yr2, ag=ag, lang=config.lang)
+                fig.update_layout(title=f"{stat2} {navi_var} anomaly to {ref_yr2[0]}-{ref_yr2[1]}")
+                plot_area.plotly_chart(fig, use_container_width=True)
+                
+                # old matplotlib include
+                #plt.title(stat2 + ' ' + navi_var + ' anomaly to ' + str(ref_yr2[0]) + '-' + str(ref_yr2[1]))
+                #st.pyplot(fig)
 
         # Re-implement this as a application wide service
         # expl_md = read_markdown_file('explainer/stripes_m.md')

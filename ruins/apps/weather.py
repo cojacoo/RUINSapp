@@ -275,10 +275,29 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             fig.update_layout(title = f"{stat1} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
             plot_area.plotly_chart(fig, use_container_width=True)
 
+            # compare to second station
+            sndstat = st.checkbox('Compare to a second station?')
+            
+            if sndstat:
+                stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
+                wdata2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1M')
+
+                #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
+                ub = True # simplify here and automatically apply bias correction
+
+                if ub:
+                    data2_ub = applySDM(wdata2, data, meth='abs')
+                    fig = yrplot_hm(pd.concat([wdata2.loc[wdata2.index[0]:data.index[0] - pd.Timedelta('1M')], data2_ub.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
+                else:
+                    fig = yrplot_hm(pd.concat([wdata2.loc[wdata2.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
+                
+                fig.update_layout(title=f"{stat2} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
+                plot_area.plotly_chart(fig, use_container_width=True)
 
         # TODO: break up this as well
         else:
             fig = yrplot_hm(sr=wdata, ref=ref_yr, ag=ag, lang=config.lang)
+            fig.update_layout(title = f"{stat1} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
             plot_area.plotly_chart(fig, use_container_width=True)
 
             # old matplotlib include

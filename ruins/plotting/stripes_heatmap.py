@@ -133,16 +133,16 @@ def _yrplot_plotly(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperat
     # add reference window
     fig.add_shape(type='rect', x0=-0.5, y0=ref[0], x1=11.5, y1=ref[1], xref='x', fillcolor='rgba(255, 0,0,0.3)', line=dict(width=3, color='red'))
     fig.add_shape(type='rect', x0=12.5, y0=ref[0], x1=13.5, y1=ref[1], xref='x', fillcolor='rgba(255, 0,0,0.3)', line=dict(width=3, color='red'))
-    fig.add_annotation(x=12, y=np.mean(ref), showarrow=False, text=ref_txt, textangle=-90, font=dict(size=20, color='red'))
+    fig.add_annotation(x=12, y=np.mean(ref), showarrow=False, text=ref_txt, textangle=-90, font=dict(size=16, color='red'))
 
     # add colorbar title
-    fig.add_annotation(x=1.22, align='right', valign='top', xref='paper', yref='paper', xanchor='right', yanchor='middle', textangle=-90, text=cbar_title, showarrow=False, font=dict(size=20, color='red'))
+    fig.add_annotation(x=1.1, align='right', valign='top', xref='paper', yref='paper', xanchor='right', yanchor='middle', textangle=-90, text=cbar_title, showarrow=False, font=dict(size=16, color='black'))
     
     # update the layout
     fig.update_layout(
         template='plotly_white',
         height=min(len(dummy) * 15, 650),
-        margin=dict(t=5, b=100, l=80, r=80, autoexpand=False),
+        margin=dict(t=25, b=100, l=80, r=160, autoexpand=False),
         xaxis=dict(tickangle=45, title='Monat' if lang == 'de' else 'Month'),
         yaxis=dict(title='Jahr' if lang == 'de' else 'Year'),
     )

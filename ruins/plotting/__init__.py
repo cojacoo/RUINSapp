@@ -1,3 +1,4 @@
 from .maps import plt_map
 from .kde import kde
-from .weather_data import monthlyx, yrplot_hm
+from .weather_data import monthlyx
+from .stripes_heatmap import yrplot_hm

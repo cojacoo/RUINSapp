@@ -11,6 +11,7 @@ Welcome to RUINSapp developers's documentation!
    :caption: Contents:
 
    deploy
+   reference/index
 
 
 

@@ -45,6 +45,9 @@ def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
         print('Please provide daily data.')
         return
 
+    # drop NA
+    ts = ts.dropna()
+
     if indi == 'Summer days (Tmax ≥ 25°C)':  # summer days
         return (ts.Tmax >= 25.).groupby(ts.index.year).sum()
     elif indi == 'Ice days (Tmax < 0°C)':  # ice days
@@ -85,7 +88,7 @@ def climate_indices(dataManager: DataManager, config: Config):
         vari = 'Tmax'
         meth = 'abs'
 
-    w1 = weather[stati].sel(vars=vari).to_dataframe().dropna()
+    w1 = weather[stati].sel(vars=vari).to_dataframe()
     w1.columns = ['bla', vari]
 
     fig = plt.figure(figsize=(10,2.5))

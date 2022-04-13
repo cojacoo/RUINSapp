@@ -335,20 +335,6 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         # st.markdown(expl_md, unsafe_allow_html=True)
 
 
-def weather_explorer(config: Config, dataManager: DataManager):
-    """
-    TODO: refactor this whole app into the main_app
-    """
-    # switch the topic
-    topic = config['current_topic']
-    if topic == 'Warming':
-        warming_data_plotter(dataManager, config)
-    
-    elif topic == 'Weather Indices':
-        climate_indices(dataManager, config)
-
-
-
 def main_app(**kwargs):
     """Describe the params in kwargs here
     """

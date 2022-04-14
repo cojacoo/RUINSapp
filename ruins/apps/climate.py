@@ -4,8 +4,9 @@ import numpy as np
 import xarray as xr # TODO  this should be covered by the DataManager
 import pandas as pd # TODO this should be covered by the DataManager
 
+from ruins.core import build_config, debug_view, Config, DataManager
 from ruins.plotting import monthlyx
-from ruins import components
+from ruins.components import topic_select, model_scale_select
 
 # TODO: Build this into DataManager
 def load_data(sel='Weather',regagg=None):
@@ -23,14 +24,20 @@ def load_data(sel='Weather',regagg=None):
 
 
 # TODO refactor the plots into the plotting module
-def climate_explorer(w_topic: str):
-    cliprojs = ["Global", "Regional"]
-    cliproj = st.sidebar.radio("Climate Model Scaling:", options=cliprojs)
+def climate_explorer(dataManager: DataManager, config: Config):
+    """
+    """
+    # get model scale
+    option_container = st.sidebar.expander('OPTIONS', expanded=True)
+    model_scale_select.model_scale_selector(dataManager, config, expander_container=option_container)
 
-    # TODO: Re-implement this as a service
-    # expl_md = read_markdown_file('explainer/climatescale.md')
-    # st.sidebar.markdown(expl_md, unsafe_allow_html=True)
+    cliproj = config['climate_scale']
 
+    # topic selector
+    topic_expander = st.sidebar.expander('Topic selection', expanded=True)
+    topic = topic_select.topic_select(config=config, topic_list=['Warming'], expander_container=topic_expander)
+
+    # TODO REFACTOR FROM HERE
     if cliproj=='Regional':
         regaggs = ['North Sea Coast', 'Krummhörn',  'Niedersachsen', 'Inland']
         regagg = st.sidebar.selectbox('Spatial aggregation:', regaggs)
@@ -110,19 +117,22 @@ def climate_explorer(w_topic: str):
         st.pyplot()
 
 
-def main_app():
+def main_app(**kwargs):
+    """@TODO: describe kwargs here"""
+    # build the config and dataManager from kwargs
+    url_params = st.experimental_get_query_params()
+    config, dataManager = build_config(url_params, **kwargs)
+
+    # set page properties and debug view
+    st.set_page_config(page_title='Climate Explorer', layout=config.layout)
+    debug_view.debug_view(dataManager, config, debug_name='Startup')
+
     st.header('Climate Projections Explorer')
     st.markdown('''In this section we add climate model projections to the table. The same variables and climate indices are used to explore the projections of different climate models and downscaling models. It is also possible to compare projections under different scenarios about the CO<sub>2</sub>-concentration pathways to observed weather and between different model projections.''',unsafe_allow_html=True)
     
     
-    # TODO: refactor this
-    topics = ['Warming', 'Weather Indices', 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
-    
-    # topic selector
-    topic = components.topic_selector(topic_list=topics, container=st.sidebar)
-    
     # TODO refactor this
-    climate_explorer(topic)
+    climate_explorer(dataManager, config)
 
 
 if __name__ == '__main__':

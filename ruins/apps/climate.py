@@ -8,20 +8,6 @@ from ruins.core import build_config, debug_view, Config, DataManager
 from ruins.plotting import monthlyx
 from ruins.components import topic_select, model_scale_select, data_select
 
-# TODO: Build this into DataManager
-def load_data(sel='Weather',regagg=None):
-    #Read data from netcdf files and return xarray
-    if sel == 'Weather':
-        data = xr.load_dataset('data/weather.nc')
-    elif sel == 'CORDEX':
-        data = xr.load_dataset('data/cordex_coast.nc')
-    else:
-        if regagg == 'North Sea Coast':
-            data = xr.load_dataset('data/cordex_coast.nc')
-            data.filter_by_attrs(RCP=sel)
-
-    return data
-
 
 # TODO refactor the plots into the plotting module
 def climate_explorer(dataManager: DataManager, config: Config):
@@ -88,6 +74,8 @@ def climate_explorer(dataManager: DataManager, config: Config):
 
     # TODO: build this into a Component
     if cliproj=='Regional':
+        st.warning('Sorry, we currently have issues with the Regional model data. Please come back later.')
+        st.stop()
         regaggs = ['North Sea Coast', 'Krummhörn',  'Niedersachsen', 'Inland']
         regagg = st.sidebar.selectbox('Spatial aggregation:', regaggs)
 

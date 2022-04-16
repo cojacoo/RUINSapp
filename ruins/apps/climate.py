@@ -6,7 +6,7 @@ import pandas as pd # TODO this should be covered by the DataManager
 
 from ruins.core import build_config, debug_view, Config, DataManager
 from ruins.plotting import monthlyx
-from ruins.components import topic_select, model_scale_select
+from ruins.components import topic_select, model_scale_select, data_select
 
 # TODO: Build this into DataManager
 def load_data(sel='Weather',regagg=None):
@@ -37,6 +37,12 @@ def climate_explorer(dataManager: DataManager, config: Config):
     topic_expander = st.sidebar.expander('Topic selection', expanded=True)
     topic = topic_select.topic_select(config=config, topic_list=['Warming'], expander_container=topic_expander)
 
+    # select first reference
+    data_select.rcp_selector(dataManager, config, title='Select first reference', expander_container=option_container, elements='__all__', layout='columns', RCP_KEY='rcp_reference_1', allow_skip=False)
+    data_select.rcp_selector(dataManager, config, title='Select second reference', expander_container=option_container, elements='__all__', layout='row', RCP_KEY='rcp_reference_2', allow_skip=False)
+    cref1 = config['rcp_reference_1']
+    cref2 = config['rcp_reference_2']
+
     # TODO REFACTOR FROM HERE
     if cliproj=='Regional':
         regaggs = ['North Sea Coast', 'Krummhörn',  'Niedersachsen', 'Inland']
@@ -48,44 +54,44 @@ def climate_explorer(dataManager: DataManager, config: Config):
         elif regagg=='Krummhörn':
             climate = xr.load_dataset('data/cordex_krummh.nc')
 
-    st.subheader('Climate Model Comparison')
-    crefs = ['Weather Data', 'all RCPs', 'RCP2.6', 'RCP4.5','RCP8.5']
-    cref1 = st.sidebar.selectbox('Select first reference:', options=crefs)
+#    st.subheader('Climate Model Comparison')
+#    crefs = ['Weather Data', 'all RCPs', 'RCP2.6', 'RCP4.5','RCP8.5']
+#    cref1 = st.sidebar.selectbox('Select first reference:', options=crefs)
 
-    if cref1=='Weather Data':
+    if cref1=='weather':
         data1 = load_data('Weather')
         data1 = data1.coast
         drngx1 = (1980,2000)
-    elif cref1 == 'all RCPs':
+    elif cref1 == 'allRCP':
         data1 = load_data('CORDEX')
         drngx1 = (2050, 2070)
-    elif cref1 == 'RCP2.6':
+    elif cref1 == 'rcp26':
         data1 = load_data('rcp26','North Sea Coast')
         drngx1 = (2050, 2070)
-    elif cref1 == 'RCP4.5':
+    elif cref1 == 'rcp45':
         data1 = load_data('rcp45', 'North Sea Coast')
         drngx1 = (2050, 2070)
-    elif cref1 == 'RCP8.5':
+    elif cref1 == 'rcp85':
         data1 = load_data('rcp85','North Sea Coast')
         drngx1 = (2050, 2070)
 
     drng1 = [pd.to_datetime(data1.isel(time=0, vars=1).time.values).year, pd.to_datetime(data1.isel(time=-1, vars=1).time.values).year]
     datarng1 = st.sidebar.slider('Data range', drng1[0], drng1[1], drngx1, key='dr1')
 
-    cref2 = st.sidebar.selectbox('Select second reference:', options=crefs)
-    if cref2 == 'Weather Data':
+#    cref2 = st.sidebar.selectbox('Select second reference:', options=crefs)
+    if cref2 == 'weather':
         data2 = load_data('Weather')
         drngx2 = (1980, 2000)
-    elif cref2 == 'all RCPs':
+    elif cref2 == 'allRCP':
         data2 = load_data('CORDEX')
         drngx2 = (2050, 2070)
-    elif cref2 == 'RCP2.6':
+    elif cref2 == 'rcp26':
         data2 = load_data('rcp26','North Sea Coast')
         drngx2 = (2050, 2070)
-    elif cref2 == 'RCP4.5':
+    elif cref2 == 'rcp45':
         data2 = load_data('rcp45', 'North Sea Coast')
         drngx2 = (2050, 2070)
-    elif cref2 == 'RCP8.5':
+    elif cref2 == 'rcp85':
         data2 = load_data('rcp85','North Sea Coast')
         drngx2 = (2050, 2070)
 
@@ -121,7 +127,7 @@ def main_app(**kwargs):
     """@TODO: describe kwargs here"""
     # build the config and dataManager from kwargs
     url_params = st.experimental_get_query_params()
-    config, dataManager = build_config(url_params, **kwargs)
+    config, dataManager = build_config(url_params=url_params, **kwargs)
 
     # set page properties and debug view
     st.set_page_config(page_title='Climate Explorer', layout=config.layout)

@@ -52,12 +52,12 @@ _VIDEO_SOURCES = {
         video_url='https://sos.noaa.gov/videos/rcp_ga_85_400.mp4'
     ),
     'allRCP': dict(
-        title='all RCPs',
+        title='### all RCPs',
         description='All RCPs try to project CO2 concentrations, like shown in the video. Source: [NOAA Science On a Sphere](https://sos.noaa.gov/catalog/datasets/carbon-dioxide-concentration-geos-5-model/)',
         video_url='https://sos.noaa.gov/videos/geos_5_carbon_400_audio.mp4'
     ),
     'weather': dict(
-        title='Weather Data',
+        title='### Weather Data',
         description='Compare with weather observations. The video shows the current global precipitation. [SOURCE](https://sos.noaa.gov/catalog/datasets/clouds-with-precipitation-real-time/)',
         video_url='https://sos.noaa.gov/videos/clouds_precip_400.mp4'
     ),

@@ -153,7 +153,35 @@ def _yrplot_plotly(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperat
 
 def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature anomaly (K)', cmx='coolwarm', cmxeq=True, li=False, lang='en', backend='plotly'):
     """
-    @TODO: documentation
+    Yearly stripes plot.
+    Creates a monthly resloved stripes plot for each year in the data.
+    The data is plotted as a heatmap showing the Temperature anomaly to the passed reference period
+    based on the adjustable quartile value.
+
+    Parameters
+    ----------
+    sr : pandas.DataFrame
+        Input data originating from one ground station
+    ref : Tuple[int, int]
+        Reference period to calculate the anomaly.
+    ag : str
+        Reduction function to use. Can be used to calculate
+        the temperature anomaly in 'sum', 'min', 'max' or 'mean'
+    qa : float
+        Quartile to use. Has to be between 0 and 1.
+    cbar_title : str
+        Optional title for the colorbar
+    cmx : str
+        Colorbar scale. Can be any string accepted by the plotting backend.
+    cmxeq : bool
+        If True (default), the colorbar range is calculated for 
+        the full dataset.
+    lang : str
+        Can be either ``'en'`` or ``'de'`. The language used for axis labels.
+    backend : str
+        Can be either ``matplotlib`` or ``plotly``.
+        The plotting backend to use.
+
     """
     if backend.lower() == 'matplotlib':
         return _yrplot_matplotlib(sr, ref=ref, ag=ag, qa=qa, cbar_title=cbar_title, cmx=cmx, cmxeq=cmxeq, li=li)

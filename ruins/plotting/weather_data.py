@@ -74,7 +74,7 @@ def yrplot_hm(sr, ref=[1980, 2000], ag='sum', qa=0.95, cbar_title='Temperature a
     return fig
 
 
-def monthlyx(dy, dyx=1, ylab='T (°C)', clab1='Monthly Mean in Year', clab2='Monthly Max in Year', pls='cividis_r'):
+def monthlyx(dy, dyx=1, ylab='T (°C)', clab1='Monthly Mean in Year', clab2='Monthly Max in Year', pls='cividis_r') -> plt.Figure:
     cmap = plt.cm.get_cmap(pls)
     colors = cmap(np.linspace(0, 1, len(dy.index.year.unique())+1))
     colorsx = cmap(np.arange(cmap.N))
@@ -114,5 +114,7 @@ def monthlyx(dy, dyx=1, ylab='T (°C)', clab1='Monthly Mean in Year', clab2='Mon
     plt.xticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
            ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
     plt.ylabel(ylab)
-    return
+
+    fig = plt.gcf()
+    return fig
 

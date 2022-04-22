@@ -62,10 +62,9 @@ class Config(Mapping):
 
         # app content
         self.topic_list = ['Warming', 'Weather Indices']#, 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
-        self.rcp_video_url = 'https://sos.noaa.gov/videos/rcp_ga_{rcp}_400.mp4'
 
         # store the keys
-        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list', 'rcp_video_url']
+        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}

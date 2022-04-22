@@ -22,7 +22,10 @@ copyright = '2022, Mirko Mälicke'
 author = 'Mirko Mälicke'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5.0'
+# load the version
+import importlib
+ruins = importlib.import_module('ruins')
+release = ruins.__version__
 
 
 # -- General configuration ---------------------------------------------------

@@ -10,3 +10,4 @@ pillow
 sklearn
 fire
 requests
+scipy

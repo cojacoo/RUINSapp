@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
 include RUINS_logo_small.png
+include requirements.txt
 graft explainer
 prune data

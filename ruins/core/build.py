@@ -45,7 +45,7 @@ def build_config(omit_dataManager: bool = False, url_params: Dict[str, List[str]
         return config, dataManager
 
 
-def download_data_archive(path: str = None, url: str = 'http://ruins-test.hydrocode.de/data.zip', if_exists: str = 'error'):
+def download_data_archive(path: str = None, url: str = 'http://116.203.189.3/data.zip', DOI: str = None, if_exists: str = 'error'):
     """Download the data archive and extract into the data folder.
     If the path is None, the default path inside the repo itself is used.
     Then, you also need to change the datapath property of the application config.
@@ -66,12 +66,34 @@ def download_data_archive(path: str = None, url: str = 'http://ruins-test.hydroc
         else:
             raise AttributeError(f'if_exists must be one of "error", "prune"')
     
-    # now the data folder exists - download the archive
-    print('Start downloading...', end='', flush=True)
-    
-    req = requests.get(url, stream=True)
-    zip = zipfile.ZipFile(io.BytesIO(req.content))
+    # check which download route is used:
+    if DOI is None:
+        # now the data folder exists - download the archive
+        print(f'Found Server URL: {url}\nStart downloading...', end='', flush=True)
+        
+        req = requests.get(url, stream=True)
+        zip = zipfile.ZipFile(io.BytesIO(req.content))
 
-    print(f'done.\nExtracting to {path}...', end='', flush=True)
-    zip.extractall(os.path.abspath(os.path.join(path, '..')))
-    print('done.', flush=True)
+        print(f'done.\nExtracting to {path}...', end='', flush=True)
+        zip.extractall(os.path.abspath(os.path.join(path, '..')))
+        print('done.', flush=True)
+    else:
+        # now the data folder exists - download the archive
+        print(f'Found DOI: {DOI}\nStart downloading...', end='', flush=True)
+
+        # Build the URL from Zenodo DOI
+        chunk = DOI.split('/')[-1]
+        record = chunk.split('.')[1]
+
+        # request the existing data from Zenodo API
+        dat = requests.get(f'https://zenodo.org/api/records/{record}').json()
+        for f in dat['files']:
+            if f['type'] == 'zip':
+                req = requests.get(f['links']['self'], stream=True)
+                zip = zipfile.ZipFile(io.BytesIO(req.content))
+
+                # extract the data to the data folder
+                print(f'done.\nExtracting to {path}...', end='', flush=True)
+                zip.extractall(os.path.abspath(os.path.join(path, '..')))
+                print('done.', flush=True)
+                break

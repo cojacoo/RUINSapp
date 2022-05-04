@@ -38,9 +38,10 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
     # column topic select (image, description, button)
     image_column, description_column, button_column = row_container.columns([1,3,1])
     
-    image = Image.open('RUINS_logo_small.png') # idea: display symbol images for each topic
+    # TODO: we should host the images in a static folder and use a url
+    #image = Image.open('RUINS_logo_small.png') # idea: display symbol images for each topic
     
-    image_column.image(image)
+    image_column.image('https://placebear.com/640/360')
     warming = button_column.button("Click here to select topic Warming")
     description_column.markdown("""**Warming**: In this topic we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.""")
     row_container.markdown("""___""")
@@ -49,7 +50,7 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
     # column topic select (image, description, button)
     image_column, description_column, button_column = row_container.columns([1,3,1])
 
-    image_column.image(image)
+    image_column.image('https://placebear.com/640/360')
     weather_indices = button_column.button("Click here to select topic Weather indices")
     description_column.markdown("""**Weather indices**: Short weather indices description.""") # TODO
     row_container.markdown("""___""")

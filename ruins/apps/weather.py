@@ -9,6 +9,7 @@ from ruins.plotting import plt_map, kde, yrplot_hm
 from ruins.components import data_select, topic_select
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
+from ruins.processing.sdm import SDM
 
 
 
@@ -16,7 +17,6 @@ from ruins.core.cache import partial_memoize
 # OLD STUFF
 def applySDM(wdata, data, meth='rel', cdf_threshold=0.9999999, lower_limit=0.1):
     '''apply structured distribution mapping to climate data and return unbiased version of dataset'''
-    from sdm import SDM
     data_ub = data.copy()
 
     for k in data_ub.columns:

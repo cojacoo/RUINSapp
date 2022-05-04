@@ -8,6 +8,7 @@ import numpy as np
 from scipy.stats import norm
 
 from ruins.core import Config, build_config, debug_view
+from ruins.plotting import distribution_plot
 
 _TRANSLATE_EN = dict(
     title='Uncertainty & Risk',
@@ -139,7 +140,6 @@ def _helper_plot(ev1: List[Tuple[float, float]], ev2: Tuple[float, float] = None
     return fig
 
 
-
 def concept_graph(config: Config, expander_container=st.sidebar, **kwargs) -> go.Figure:
     """
     # TODO: document this
@@ -172,7 +172,7 @@ def concept_graph(config: Config, expander_container=st.sidebar, **kwargs) -> go
             st.session_state.concept_event_1 = ev1
             st.experimental_rerun()
         else:
-            fig = _helper_plot(ev1)
+            fig = distribution_plot({'outcomes': ev1, 'coloscale': 'Greens'})
             return fig
     else:
         ev1 = config['concept_event_1']
@@ -193,7 +193,7 @@ def concept_graph(config: Config, expander_container=st.sidebar, **kwargs) -> go
     e2_mu = c.slider('Expected value of alternative event', min_value=1., max_value=10., value=5.5)
     e2_st = r.slider('Certainty of alternative event', min_value=0.1, max_value=3.0, value=0.2)
 
-    fig = _helper_plot(ev1_new, (e2_mu, e2_st))
+    fig = distribution_plot({'outcomes': ev1_new, 'name': 'Original Event', 'colorscale': 'Greens'}, {'outcomes': [(e2_mu, e2_st)], 'name': 'Alternative Event', 'colorscale': 'Oranges'})
     return fig
 
 

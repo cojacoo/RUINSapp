@@ -15,6 +15,80 @@ from ruins.plotting.climate_parcoords import climate_projection_parcoords
 from ruins.processing.sdm import SDM
 
 
+_TRANSLATE_DE_CLIMATE = dict(
+    title="Unser Wetter in der Zukunft",
+    introduction="""Schon die Betrachtung von aktuellen Wetterdaten zeigt, dass diese nicht immer eindeutig sind.
+Unsicherheiten bei der Beobachtung von Wetterphänomenen Unwissen über Prozesse wirken sich
+auf aktuellen Wetterbeschreibungen aus und erschweren z.B. die Wettervorhersage.
+
+In der Klimaforschung müssen wir nun die nächsten **80 Jahre** vorhersagen. Neben Vorhersageunsicherheiten,
+sind aber auch die **Voraussetzungen und Bedingungen** von denen wir ausgehen müssen nicht bekannt und 
+auch nicht zu beziffern. 
+
+Wie entwickelt sich die Weltbevölkerung? 
+
+Wie viel CO2 stoßen wir in 30 Jahren aus?
+
+Außerdem: Der Mensch wird durch Managemententscheidungen jene Bedingungen ständig ändern. Dennoch müssen wir heute 
+schon Informationen bereitstellen und Abschätzungen liefern. Deshalb ist es so wichtig Wissenslücken zu
+schließen und noch wichtiger, Unsicherheit durch Unwissen in Managaementprozesse einzubinden.
+
+Mit dem **Klimamodell Explorer** können einige dieser Szenarien mit einander verglichen werden.
+"""
+)
+
+_TRANSLATE_EN_CLIMATE = dict(
+    title="Projecting weather into the future",
+    introduction="""Schon die Betrachtung von aktuellen Wetterdaten zeigt, dass diese nicht immer eindeutig sind.
+Unsicherheiten bei der Beobachtung von Wetterphänomenen Unwissen über Prozesse wirken sich
+auf aktuellen Wetterbeschreibungen aus und erschweren z.B. die Wettervorhersage.
+
+In der Klimaforschung müssen wir nun die nächsten **80 Jahre** vorhersagen. Neben Vorhersageunsicherheiten,
+sind aber auch die **Voraussetzungen und Bedingungen** von denen wir ausgehen müssen nicht bekannt und 
+auch nicht zu beziffern. 
+
+Wie entwickelt sich die Weltbevölkerung? 
+
+Wie viel CO2 stoßen wir in 30 Jahren aus?
+
+Außerdem: Der Mensch wird durch Managemententscheidungen jene Bedingungen ständig ändern. Dennoch müssen wir heute 
+schon Informationen bereitstellen und Abschätzungen liefern. Deshalb ist es so wichtig Wissenslücken zu
+schließen und noch wichtiger, Unsicherheit durch Unwissen in Managaementprozesse einzubinden.
+
+Mit dem **Klimamodell Explorer** können einige dieser Szenarien mit einander verglichen werden.
+"""
+)
+
+_TRANSLATE_DE_INDICES = dict(
+    title="Projektionen in einer Zahl darstellen",
+    introduction="""Klimaprojektionen sind der Versuch möglichst viele verschiedene mögliche zukünftige
+Szenarien mit in die Betrachtung des Klimawandels einzubeziehen. Durch verschiedene Unsicherheiten können
+sich die einzelnen Modelle eines RCPs voneinander jedoch stärker unterscheiden, als zwei andere Modelle, die
+sogar von unterschiedlichen Voraussetzungen ausgehen.
+Hierdurch wird eine scharfe Aussage über die Folgen von Managementetscheidungen scheinbar unmöglich.
+Vor allem, weil Trends in den Modellen so nur sehr schwer zu indentifizieren sind und entscheidende Änderungen
+im Rauschen untergehen können.
+
+Mit dem letzten Kapitel wird der Versuch unternommen, all die Variabilität und Unsicherheit auf eine Zahl
+runterzubrechen, einem **Klimaindex**.
+Dieser Index muss vor allem eine konkrete Bedeutung für einen Bestimmten **Kontext** haben, z.b. einem 
+betriebswirtschaftlichen Entscheidungsprozess.
+
+> *Soll ich in den nächsten Jahren eher Winterweizen oder Mais anbauen?*
+
+Die Erkenntnis, dass alle Klimamodelle eine Erhöhung der Durchschnittstemperaturen in den nächsten Jahrzenten
+vorhersagen ist für konkrete Entscheidungsprozesse nicht wichtig. Sondern, z.B. wenn Winterweizen weniger sensibel
+auf Hitzetage reagiert, ist wichtig ob die Zahl dieser Tage erheblich zunimmt.
+
+Für alle betrachteten Stationen in RUINS können im letzten Kapitel die Projektion der **Klimaindices** bis 2100 erforscht werden.
+"""
+)
+
+_TRANSLATE_EN_INDICES = dict(
+    title="Breaking down projections into one metric",
+    introduction="""
+"""
+)
 
 ####
 # OLD STUFF
@@ -443,21 +517,32 @@ def quick_access_buttons(config: Config, container = st.sidebar):
     # get the current stage
     stage = config.get('quick_access')
 
+    # make columns
     l, r = container.columns(2)
+
+    # make translations
+    if config.lang == 'de':
+        lab_weather = 'Wetterdaten Explorer'
+        lab_climate = 'Klimamodell Explorer'
+        lab_index = 'Klimadaten Indices'
+    else:
+        lab_weather = 'Weather explorer'
+        lab_climate = 'Climate explorer'
+        lab_index = 'Climate indices'
 
     # switch the cases
     if stage == 'climate':
-        go_weather = l.button('Weather explorer')
+        go_weather = l.button(lab_weather)
         go_climate = False
-        go_idx = r.button('Climate indices')
+        go_idx = r.button(lab_index)
     elif stage == 'index':
-        go_weather = l.button('Weather explorer')
-        go_climate = r.button('Climate explorer')
+        go_weather = l.button(lab_weather)
+        go_climate = r.button(lab_climate)
         go_idx = False
     else:
         go_weather = False
-        go_climate = l.button('Climate explorer')
-        go_idx = r.button('Climate indices')
+        go_climate = l.button(lab_climate)
+        go_idx = r.button(lab_index)
 
     # check if the Weather explorer is needed
     if go_weather:
@@ -493,6 +578,14 @@ def weather_stage(dataManager: DataManager, config: Config, data_expander=st.sid
 
     warming_data_plotter(dataManager, config)
 
+    # transition page
+    st.sidebar.info('Even about the present there is uncertainty! What about the future?')
+    ok = st.sidebar.button('LEARN MORE')
+
+    if ok:
+        st.session_state.quick_access = 'transition_climate'
+        st.experimental_rerun()
+
 
 def climate_stage(dataManager: DataManager, config: Config):
     # Story mode - go through each setting
@@ -505,8 +598,16 @@ def climate_stage(dataManager: DataManager, config: Config):
     # run main visualization
     climate_plots(dataManager, config, expander_container=option_container)
 
+    # transition page
+    st.sidebar.info('How do we make sense of this? Can we identify trends?')
+    ok = st.sidebar.button('LEARN MORE')
 
-def index_stage(dataManager: DataManager, config: Config, data_expander=st.sidebar):
+    if ok:
+        st.session_state.quick_access = 'transition_index'
+        st.experimental_rerun()
+
+
+def indices_stage(dataManager: DataManager, config: Config, data_expander=st.sidebar):
     # Story mode - go through each setting
     # update session state with current data settings
     data_expander = st.sidebar.expander('Data selection', expanded=True)
@@ -515,6 +616,34 @@ def index_stage(dataManager: DataManager, config: Config, data_expander=st.sideb
 
     # run actual visualization
     climate_indices(dataManager, config)
+
+
+def transition_page(config: Config) -> None:
+    """
+    This Transition is shown when the user switches from weather explorer to
+    climate projections or further to climate indices, without using the quick access buttons.
+    The page can be used to present a primer how the two topics are related.
+    """
+    # check with transition page is needed
+    if config['quick_access'] == 'transition_climate':
+        t = config.translator(de=_TRANSLATE_DE_CLIMATE, en=_TRANSLATE_EN_CLIMATE)
+        next_stage = 'climate'
+    elif config['quick_access'] == 'transition_index':
+        t = config.translator(de=_TRANSLATE_DE_INDICES, en=_TRANSLATE_EN_INDICES)
+        next_stage = 'index'
+    
+    # build the page
+    st.header(t('title'))
+    st.markdown(t('introduction'), unsafe_allow_html=True)
+
+    # add continue button
+    ok = st.button('WEITER' if config.lang=='de' else 'CONTINUE')
+
+    if ok:
+        st.session_state.quick_access = next_stage
+        st.experimental_rerun()
+    else:
+        st.stop()
 
 
 def main_app(**kwargs):
@@ -553,7 +682,9 @@ def main_app(**kwargs):
     elif stage == 'climate':
         climate_stage(dataManager, config)
     elif stage == 'index':
-        index_stage(dataManager, config)
+        indices_stage(dataManager, config)
+    elif stage.startswith('transition'):
+        transition_page(config)
     else:
         st.error(f"We received weird data. A quick_access='{stage}' does not exist. Please contact the developer.")
         st.stop()

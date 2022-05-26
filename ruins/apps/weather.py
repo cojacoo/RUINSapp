@@ -579,8 +579,9 @@ def weather_stage(dataManager: DataManager, config: Config, data_expander=st.sid
     warming_data_plotter(dataManager, config)
 
     # transition page
-    st.sidebar.info('Even about the present there is uncertainty! What about the future?')
-    ok = st.sidebar.button('LEARN MORE')
+    st.markdown("""<hr style="margin-top: 4rem; margin-bottom: 2rem;" />""", unsafe_allow_html=True)
+    st.success('Even about the present there is uncertainty! What about the future?')
+    ok = st.button('LEARN MORE')
 
     if ok:
         st.session_state.quick_access = 'transition_climate'
@@ -599,8 +600,9 @@ def climate_stage(dataManager: DataManager, config: Config):
     climate_plots(dataManager, config, expander_container=option_container)
 
     # transition page
-    st.sidebar.info('How do we make sense of this? Can we identify trends?')
-    ok = st.sidebar.button('LEARN MORE')
+    st.markdown("""<hr style="margin-top: 4rem; margin-bottom: 2rem;" />""", unsafe_allow_html=True)
+    st.success('How do we make sense of this? Can we identify trends?')
+    ok = st.button('LEARN MORE')
 
     if ok:
         st.session_state.quick_access = 'transition_index'

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from plotly.express.colors import named_colorscales
 
 from ruins.plotting import plt_map, kde, yrplot_hm
-from ruins.components import data_select, model_scale_select, topic_select
+from ruins.components import data_select, model_scale_select
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
 from ruins.plotting.climate_parcoords import climate_projection_parcoords

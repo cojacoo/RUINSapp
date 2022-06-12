@@ -54,6 +54,11 @@ class Config(Mapping):
             'stats.csv': dict(index_col=0),
             'hsim_collect.csv': dict(index_col=0),
             'windpowerx.csv': dict(index_col=0),
+            'estQ.csv': dict(index_col=[0], parse_dates=[0]),
+            'levelknock.csv': dict(index_col=[0], parse_dates=[0]),
+            'levelW.csv': dict(index_col=[0], parse_dates=[0]),
+            'prec.csv': dict(index_col=[0], parse_dates=[0]),
+            'Qknock.csv': dict(index_col=[0], parse_dates=[0]),
         }
         self.sources_args.update(kwargs.get('include_args', {}))
 
